@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Entorno
+.env
+*.log
+
+# Documentación generada
+site/
+
+# Sistema
+.DS_Store
+.idea/
+.vscode/
