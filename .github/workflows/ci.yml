@@ -18,6 +18,7 @@ jobs:
           python-version: "3.12"
       - run: pip install ".[dev]"
       - run: ruff check .
+      - run: ruff format --check .
       - run: pytest
 
   frontend:

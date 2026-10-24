@@ -10,10 +10,16 @@ class Settings(BaseSettings):
 
     app_name: str = "ERP Victoria"
     app_env: str = "local"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
     database_url: str = "sqlite+pysqlite:///:memory:"
-    secret_key: str = "solo-para-desarrollo"
+    secret_key: str = "solo-para-desarrollo-cambiar-en-produccion"
     cors_origins: str = "http://localhost:5173"
+
+    # Seguridad
+    access_token_minutes: int = 480
+    bootstrap_on_startup: bool = True
+    admin_email: str = "admin@erp-victoria.local"
+    admin_password: str = "Admin123!"
 
     @property
     def cors_origin_list(self) -> list[str]:

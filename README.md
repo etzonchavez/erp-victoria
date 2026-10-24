@@ -37,6 +37,10 @@ docker compose up --build
 | API | http://localhost:8000/api/v1/health |
 | Documentación de la API | http://localhost:8000/docs |
 
+Usuario inicial: `admin@erp-victoria.local` / `Admin123!` (cámbialo en `.env` antes de usarlo fuera de tu equipo).
+
+Si ya tenías el ambiente levantado de la semana 1, reconstrúyelo con `docker compose up --build`.
+
 ## Documentación
 
 ```bash
@@ -45,6 +49,14 @@ mkdocs serve
 ```
 
 Se publica automáticamente en GitHub Pages en cada cambio a la rama `main`.
+
+## Pruebas
+
+```bash
+cd backend
+pip install ".[dev]"
+pytest
+```
 
 ## Convenciones
 

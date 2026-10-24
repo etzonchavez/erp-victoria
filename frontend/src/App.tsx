@@ -1,49 +1,122 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import Auditoria from "./paginas/Auditoria";
+import Ingreso from "./paginas/Ingreso";
+import Modulos from "./paginas/Modulos";
+import Roles from "./paginas/Roles";
+import Usuarios from "./paginas/Usuarios";
+import { SesionProvider, useSesion } from "./sesion";
 
-type Health = {
-  status: string;
-  app: string;
-  version: string;
-  environment: string;
-  database: string;
-};
+type Ruta = { ruta: string; nombre: string; permiso: string; pagina: () => ReactNode };
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// Cada módulo agrega aquí sus pantallas. El menú muestra solo las que el usuario puede ver.
+const MENU: { modulo: string; rutas: Ruta[] }[] = [
+  {
+    modulo: "seguridad",
+    rutas: [
+      { ruta: "usuarios", nombre: "Usuarios", permiso: "seguridad.usuario.ver", pagina: () => <Usuarios /> },
+      { ruta: "roles", nombre: "Roles", permiso: "seguridad.rol.ver", pagina: () => <Roles /> },
+      { ruta: "modulos", nombre: "Módulos", permiso: "seguridad.modulo.ver", pagina: () => <Modulos /> },
+      { ruta: "auditoria", nombre: "Auditoría", permiso: "seguridad.auditoria.ver", pagina: () => <Auditoria /> },
+    ],
+  },
+];
 
-export default function App() {
-  const [health, setHealth] = useState<Health | null>(null);
-  const [error, setError] = useState(false);
+const rutaActual = () => window.location.hash.replace(/^#\/?/, "");
+
+function Aplicacion() {
+  const { sesion, cargando, salir, puede } = useSesion();
+  const [ruta, setRuta] = useState(rutaActual);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/v1/health`)
-      .then((r) => r.json())
-      .then(setHealth)
-      .catch(() => setError(true));
+    const cambio = () => {
+      setRuta(rutaActual());
+      setMenuAbierto(false);
+    };
+    window.addEventListener("hashchange", cambio);
+    return () => window.removeEventListener("hashchange", cambio);
   }, []);
 
+  if (cargando) return <div className="cargando">Cargando…</div>;
+  if (!sesion) return <Ingreso />;
+
+  const activos = new Set(sesion.modulos.map((m) => m.codigo));
+  const secciones = MENU.filter((s) => activos.has(s.modulo))
+    .map((s) => ({
+      ...s,
+      nombre: sesion.modulos.find((m) => m.codigo === s.modulo)?.nombre ?? s.modulo,
+      rutas: s.rutas.filter((r) => puede(r.permiso)),
+    }))
+    .filter((s) => s.rutas.length > 0);
+  const disponibles = secciones.flatMap((s) => s.rutas);
+  const actual = disponibles.find((r) => r.ruta === ruta) ?? disponibles[0];
+  const iniciales = sesion.usuario.nombre
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+  const otrosActivos = sesion.modulos.filter((m) => !MENU.some((s) => s.modulo === m.codigo));
+
   return (
-    <main className="shell">
-      <header>
-        <h1>ERP Victoria</h1>
-        <p>Plataforma en construcción · Semana 1</p>
+    <div className="marco">
+      <header className="barra-movil">
+        <button className="boton-icono" onClick={() => setMenuAbierto(!menuAbierto)} aria-expanded={menuAbierto}>
+          ☰
+        </button>
+        <span className="marca">Victoria</span>
       </header>
-      <section className="card">
-        <h2>Estado del sistema</h2>
-        {error && <p className="bad">La API no responde.</p>}
-        {!error && !health && <p>Consultando…</p>}
-        {health && (
-          <dl>
-            <dt>API</dt>
-            <dd className="ok">{health.status}</dd>
-            <dt>Base de datos</dt>
-            <dd className={health.database === "ok" ? "ok" : "bad"}>{health.database}</dd>
-            <dt>Versión</dt>
-            <dd>{health.version}</dd>
-            <dt>Ambiente</dt>
-            <dd>{health.environment}</dd>
-          </dl>
+      <nav className={menuAbierto ? "riel abierto" : "riel"} aria-label="Menú principal">
+        <p className="marca">Victoria</p>
+        {secciones.map((s) => (
+          <div key={s.modulo} className="riel-grupo">
+            <p className="riel-modulo">{s.nombre}</p>
+            {s.rutas.map((r) => (
+              <a key={r.ruta} href={`#/${r.ruta}`} aria-current={actual?.ruta === r.ruta ? "page" : undefined}>
+                {r.nombre}
+              </a>
+            ))}
+          </div>
+        ))}
+        {otrosActivos.length > 0 && (
+          <div className="riel-grupo">
+            <p className="riel-modulo">Próximamente</p>
+            {otrosActivos.map((m) => (
+              <span key={m.codigo} className="riel-pendiente">
+                {m.nombre}
+              </span>
+            ))}
+          </div>
         )}
-      </section>
-    </main>
+        <div className="riel-usuario">
+          <span className="avatar" aria-hidden="true">
+            {iniciales}
+          </span>
+          <div>
+            <p>{sesion.usuario.nombre}</p>
+            <button className="enlace" onClick={salir}>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </nav>
+      <main className="contenido">
+        {actual ? (
+          actual.pagina()
+        ) : (
+          <div className="vacio">
+            <p>Tu usuario aún no tiene roles asignados. Pide a un administrador que te asigne uno.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <SesionProvider>
+      <Aplicacion />
+    </SesionProvider>
   );
 }

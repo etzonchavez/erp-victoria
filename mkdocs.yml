@@ -29,5 +29,7 @@ nav:
       - ADR-001 Stack tecnológico: adr/0001-stack.md
       - ADR-002 Arquitectura: adr/0002-arquitectura.md
       - ADR-003 Infraestructura a costo cero: adr/0003-infraestructura.md
-  - Módulos: modulos/index.md
+  - Módulos:
+      - Índice: modulos/index.md
+      - Seguridad: modulos/seguridad.md
   - Países: paises/index.md

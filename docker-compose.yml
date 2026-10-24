@@ -19,6 +19,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/code/app
+      - ./backend/migrations:/code/migrations
     depends_on:
       db:
         condition: service_healthy

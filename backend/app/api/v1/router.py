@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.core.config import get_settings
 from app.core.database import database_is_up
+from app.modules.seguridad.api import router as seguridad_router
 
 api_router = APIRouter()
 
@@ -20,6 +21,4 @@ def health() -> dict:
     }
 
 
-# Los módulos se registran así (semana 2 en adelante):
-# from app.modules.seguridad.api import router as seguridad_router
-# api_router.include_router(seguridad_router, prefix="/seguridad", tags=["seguridad"])
+api_router.include_router(seguridad_router, prefix="/seguridad", tags=["seguridad"])

@@ -13,7 +13,7 @@ Cada módulo se documenta con esta plantilla:
 
 | Módulo | Documentación |
 | --- | --- |
-| Seguridad | Semana 2 |
+| Seguridad | [Disponible](seguridad.md) |
 | Maestros | Semana 3 |
 | Solicitudes de compra | Semana 4 |
 | Compras | Semana 5 |
