@@ -1,6 +1,6 @@
 # Seguridad
 
-**Versión:** 0.2.0 · **Estado:** disponible
+**Versión:** 0.3.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -12,6 +12,32 @@ Existen dos formas de dar acceso:
 
 - **Administrador:** tiene todos los permisos de los módulos activos. Es el único que puede crear otros administradores.
 - **Roles:** agrupan permisos de un puesto de trabajo (por ejemplo, Comprador o Aprobador). Un usuario puede tener varios roles; sus permisos se suman.
+
+### Tipos de rol
+
+Todo rol pertenece a uno de estos tipos:
+
+| Tipo | Para qué sirve |
+| --- | --- |
+| Administrador | Control total del módulo |
+| Configuración | Parametriza el módulo sin operar el día a día |
+| Operativo | Ejecuta las transacciones diarias |
+| Consulta | Solo lectura y auditoría |
+
+### Roles estándar
+
+Cada módulo trae roles estándar listos para usar. Se crean solos al instalar o actualizar el ERP, no se pueden editar ni desactivar, y cada versión los mantiene al día. Para adaptarlos a tu empresa, usa **Duplicar**: la copia conserva el tipo y los permisos, y sí se puede ajustar.
+
+Su código lleva el nombre del módulo y un punto (`seguridad.auditor`); los roles propios no pueden usar punto, así nunca coinciden.
+
+Roles estándar de Seguridad:
+
+| Rol | Tipo | Código | Permisos |
+| --- | --- | --- | --- |
+| Administrador de seguridad | Administrador | `seguridad.administrador` | Todos los del módulo |
+| Configurador del sistema | Configuración | `seguridad.configurador` | Módulos (ver, editar) y roles (ver, crear, editar) |
+| Gestor de usuarios | Operativo | `seguridad.gestor_usuarios` | Usuarios (ver, crear, editar) y ver roles |
+| Auditor | Consulta | `seguridad.auditor` | Ver usuarios, roles, módulos y auditoría |
 
 Permisos del módulo:
 
@@ -31,7 +57,7 @@ Permisos del módulo:
 
 1. Al instalar el ERP se crea automáticamente un **administrador inicial** (correo y contraseña definidos en la configuración del ambiente).
 2. El administrador **activa los módulos** que la empresa va a usar.
-3. El administrador **crea los roles** de la empresa y marca sus permisos.
+3. El administrador **asigna roles estándar** o, si necesita variantes, los **duplica** y ajusta sus permisos.
 4. El administrador **crea los usuarios** y les asigna uno o más roles.
 5. Cada usuario **ingresa** con su correo y contraseña y solo ve en el menú las pantallas que sus permisos permiten.
 6. Toda acción queda registrada en la **auditoría**.
@@ -61,7 +87,8 @@ Permisos del módulo:
 | Campo | Regla |
 | --- | --- |
 | Nombre | Obligatorio, de 2 a 100 caracteres |
-| Código | Obligatorio, único; minúsculas, números y guion bajo; no se puede cambiar |
+| Código | Se genera desde el nombre; único; minúsculas, números y guion bajo; no se puede cambiar |
+| Tipo | Obligatorio: administrador, configuración, operativo o consulta |
 | Descripción | Opcional, hasta 300 caracteres |
 | Permisos | Agrupados por módulo, con opción de marcar todos |
 | Rol activo | Si se desactiva, sus usuarios pierden esos permisos de inmediato |
@@ -82,6 +109,8 @@ Lista de eventos con fecha, usuario, acción y detalle de los cambios (valor ant
 - El módulo Seguridad no se puede desactivar.
 - Si un módulo está inactivo, sus permisos no aplican aunque el rol los tenga.
 - Un rol solo puede tener permisos que existen en el catálogo.
+- Todo rol tiene un tipo.
+- Los roles estándar no se pueden editar ni desactivar; si alguien los altera en la base, el ERP los restaura al reiniciar.
 - La sesión vence a las 8 horas (configurable).
 - Los intentos de ingreso fallidos quedan registrados.
 - La auditoría no se puede editar ni borrar.
@@ -124,12 +153,16 @@ Porque sin él nadie podría ingresar ni administrar el ERP.
 | GET | `/api/v1/seguridad/roles` | `seguridad.rol.ver` |
 | POST | `/api/v1/seguridad/roles` | `seguridad.rol.crear` |
 | PATCH | `/api/v1/seguridad/roles/{id}` | `seguridad.rol.editar` |
+| POST | `/api/v1/seguridad/roles/{id}/duplicar` | `seguridad.rol.crear` |
+| GET | `/api/v1/seguridad/tipos-rol` | `seguridad.rol.ver` |
 | GET | `/api/v1/seguridad/permisos` | `seguridad.rol.ver` |
 | GET | `/api/v1/seguridad/modulos` | `seguridad.modulo.ver` |
 | PATCH | `/api/v1/seguridad/modulos/{codigo}` | `seguridad.modulo.editar` |
 | GET | `/api/v1/seguridad/auditoria` | `seguridad.auditoria.ver` |
 
 Tablas: `seg_usuario`, `seg_rol`, `seg_permiso`, `seg_modulo`, `seg_usuario_rol`, `seg_rol_permiso`, `seg_auditoria`.
+
+Para que un módulo nuevo traiga sus roles estándar, agrégalos en `catalogo.ROLES_ESTANDAR` con un rol por tipo que aplique.
 
 Para proteger una ruta de otro módulo:
 

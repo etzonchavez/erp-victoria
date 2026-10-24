@@ -1,11 +1,11 @@
 from tests.conftest import API, login
 
 
-def crear_rol(client, admin, codigo, permisos):
+def crear_rol(client, admin, codigo, permisos, tipo="operativo"):
     r = client.post(
         f"{API}/roles",
         headers=admin,
-        json={"codigo": codigo, "nombre": codigo, "permisos": permisos},
+        json={"codigo": codigo, "nombre": codigo, "tipo": tipo, "permisos": permisos},
     )
     assert r.status_code == 201, r.text
     return r.json()
@@ -151,7 +151,12 @@ def test_rol_con_permiso_inexistente_es_rechazado(client, admin):
     r = client.post(
         f"{API}/roles",
         headers=admin,
-        json={"codigo": "malo", "nombre": "Malo", "permisos": ["no.existe.nunca"]},
+        json={
+            "codigo": "malo",
+            "nombre": "Malo",
+            "tipo": "operativo",
+            "permisos": ["no.existe.nunca"],
+        },
     )
     assert r.status_code == 422
     assert r.json()["codigo"] == "permiso_inexistente"

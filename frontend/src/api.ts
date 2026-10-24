@@ -5,8 +5,16 @@ const CLAVE_TOKEN = "erp-victoria.token";
 
 export type Modulo = { codigo: string; nombre: string; orden: number; activo: boolean; obligatorio: boolean };
 export type Permiso = { codigo: string; modulo: string; descripcion: string };
-export type RolResumen = { id: string; codigo: string; nombre: string };
-export type Rol = RolResumen & { descripcion: string | null; activo: boolean; permisos: string[] };
+export type TipoRol = { codigo: string; descripcion: string };
+export type RolResumen = { id: string; codigo: string; nombre: string; tipo: string };
+export type Rol = RolResumen & { estandar: boolean; descripcion: string | null; activo: boolean; permisos: string[] };
+
+export const NOMBRE_TIPO: Record<string, string> = {
+  administrador: "Administrador",
+  configuracion: "Configuración",
+  operativo: "Operativo",
+  consulta: "Consulta",
+};
 export type Usuario = {
   id: string;
   email: string;

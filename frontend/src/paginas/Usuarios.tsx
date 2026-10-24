@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { api, type Rol, type Usuario } from "../api";
+import { api, NOMBRE_TIPO, type Rol, type Usuario } from "../api";
 import { Encabezado, Estado, MensajeError, Panel, fecha } from "../componentes";
 import { useSesion } from "../sesion";
 
@@ -171,6 +171,10 @@ export default function Usuarios() {
                     <span>
                       {r.nombre}
                       {!r.activo && <span className="tenue"> (inactivo)</span>}
+                      <small>
+                        {NOMBRE_TIPO[r.tipo] ?? r.tipo}
+                        {r.estandar ? " · estándar" : ""}
+                      </small>
                     </span>
                   </label>
                 ))}

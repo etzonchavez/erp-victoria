@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     app_name: str = "ERP Victoria"
     app_env: str = "local"
-    app_version: str = "0.2.0"
+    app_version: str = "0.3.0"
     database_url: str = "sqlite+pysqlite:///:memory:"
     secret_key: str = "solo-para-desarrollo-cambiar-en-produccion"
     cors_origins: str = "http://localhost:5173"

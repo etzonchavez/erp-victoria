@@ -71,7 +71,22 @@ def sincronizar_catalogo(db: Session) -> None:
             permisos[p.codigo].descripcion = p.descripcion
         else:
             db.add(Permiso(codigo=p.codigo, modulo=p.modulo, descripcion=p.descripcion))
+    db.flush()
+    sincronizar_roles_estandar(db)
     db.commit()
+
+
+def sincronizar_roles_estandar(db: Session) -> None:
+    """Crea o actualiza los roles estándar. Siempre quedan iguales al catálogo de la versión."""
+    actuales = {r.codigo: r for r in db.scalars(select(Rol).where(Rol.estandar.is_(True)))}
+    for d in catalogo.ROLES_ESTANDAR:
+        permisos = list(db.scalars(select(Permiso).where(Permiso.codigo.in_(d.permisos))))
+        rol = actuales.get(d.codigo)
+        if not rol:
+            rol = Rol(codigo=d.codigo, estandar=True)
+            db.add(rol)
+        rol.nombre, rol.tipo, rol.descripcion, rol.activo = d.nombre, d.tipo, d.descripcion, True
+        rol.permisos = permisos
 
 
 def crear_administrador_inicial(db: Session) -> None:
@@ -168,7 +183,9 @@ def listar_permisos(db: Session) -> list[Permiso]:
 
 
 def listar_roles(db: Session) -> list[Rol]:
-    return list(db.scalars(select(Rol).order_by(Rol.nombre)))
+    orden_tipo = list(catalogo.TIPOS_ROL)
+    roles = db.scalars(select(Rol))
+    return sorted(roles, key=lambda r: (not r.estandar, orden_tipo.index(r.tipo), r.nombre))
 
 
 def obtener_rol(db: Session, rol_id: uuid.UUID) -> Rol:
@@ -183,14 +200,17 @@ def crear_rol(
     actor: Usuario,
     codigo: str,
     nombre: str,
+    tipo: str,
     descripcion: str | None,
     permisos: list[str],
+    origen: Rol | None = None,
 ) -> Rol:
     if db.scalar(select(Rol).where(Rol.codigo == codigo)):
         raise ErrorERP(409, "rol_duplicado", f"Ya existe un rol con código {codigo}")
     rol = Rol(
         codigo=codigo,
         nombre=nombre,
+        tipo=tipo,
         descripcion=descripcion,
         permisos=_validar_permisos(db, permisos),
         creado_por=actor.id,
@@ -198,15 +218,39 @@ def crear_rol(
     )
     db.add(rol)
     db.flush()
-    auditar(db, actor, "crear", "rol", rol.id, {"codigo": codigo, "permisos": sorted(permisos)})
+    detalle = {"codigo": codigo, "tipo": tipo, "permisos": sorted(permisos)}
+    if origen:
+        detalle["duplicado_de"] = origen.codigo
+    auditar(db, actor, "crear", "rol", rol.id, detalle)
     db.commit()
     return rol
 
 
+def duplicar_rol(db: Session, actor: Usuario, rol_id: uuid.UUID, codigo: str, nombre: str) -> Rol:
+    """Crea un rol propio con el tipo y los permisos de otro (normalmente uno estándar)."""
+    origen = obtener_rol(db, rol_id)
+    return crear_rol(
+        db,
+        actor,
+        codigo,
+        nombre,
+        origen.tipo,
+        origen.descripcion,
+        [p.codigo for p in origen.permisos],
+        origen=origen,
+    )
+
+
 def cambiar_rol(db: Session, actor: Usuario, rol_id: uuid.UUID, cambios: dict) -> Rol:
     rol = obtener_rol(db, rol_id)
+    if rol.estandar:
+        raise ErrorERP(
+            409,
+            "rol_estandar",
+            "Los roles estándar no se modifican. Duplícalo para crear una versión propia.",
+        )
     detalle: dict = {}
-    for campo in ("nombre", "descripcion", "activo"):
+    for campo in ("nombre", "tipo", "descripcion", "activo"):
         if campo in cambios and getattr(rol, campo) != cambios[campo]:
             detalle[campo] = {"antes": getattr(rol, campo), "despues": cambios[campo]}
             setattr(rol, campo, cambios[campo])

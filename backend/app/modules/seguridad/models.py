@@ -52,6 +52,8 @@ class Rol(ConAuditoria, Base):
     codigo: Mapped[str] = mapped_column(String(50), unique=True)
     nombre: Mapped[str] = mapped_column(String(100))
     descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    tipo: Mapped[str] = mapped_column(String(20), default="operativo", server_default="operativo")
+    estandar: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
 
     permisos: Mapped[list[Permiso]] = relationship(secondary=seg_rol_permiso, lazy="selectin")

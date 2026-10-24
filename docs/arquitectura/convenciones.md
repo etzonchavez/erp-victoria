@@ -32,3 +32,10 @@ Prefijos de módulo: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` c
 
 - Rama principal `main`; trabajo en ramas `semana-N/tarea`.
 - Mensajes de commit: `modulo: qué cambió` (ej. `seguridad: alta de roles`).
+
+## Roles
+
+- Todo módulo define en `catalogo.py` un rol estándar por tipo que aplique: administrador, configuración, operativo y consulta.
+- Código del rol estándar: `<modulo>.<puesto>` (ej. `compras.comprador`). Nombre en español, en singular y por puesto de trabajo.
+- Los roles propios del cliente usan códigos sin punto y se crean duplicando uno estándar.
+- Permisos de un rol de consulta: solo acciones `ver`.

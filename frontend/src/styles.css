@@ -189,3 +189,11 @@ th.numero, td.numero:not(:first-child) { text-align: right; }
   .panel { animation: none; }
   .interruptor span { transition: none; }
 }
+
+/* ---------- roles por tipo ---------- */
+.fila-grupo th { background: var(--superficie); color: var(--tinta); font-weight: 600; padding-top: 20px; border-bottom: 1px solid var(--linea); }
+.fila-grupo th span { font-weight: 400; color: var(--texto-tenue); margin-left: 12px; }
+.tabla tbody:first-of-type .fila-grupo th { padding-top: 12px; }
+.etiqueta-estandar { background: var(--sello-claro); color: var(--sello); margin-left: 8px; }
+.aviso-info { background: #eef1f6; color: var(--texto); margin-bottom: 0; }
+.lista-permisos { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }

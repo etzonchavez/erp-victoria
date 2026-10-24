@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -41,15 +42,31 @@ class PermisoSalida(Esquema):
 
 
 # Roles
+TipoRol = Literal["administrador", "configuracion", "operativo", "consulta"]
+CodigoRol = Annotated[str, Field(min_length=2, max_length=50, pattern=r"^[a-z0-9_]+$")]
+
+
+class TipoRolSalida(BaseModel):
+    codigo: str
+    descripcion: str
+
+
 class RolCrear(BaseModel):
-    codigo: str = Field(min_length=2, max_length=50, pattern=r"^[a-z0-9_]+$")
+    codigo: CodigoRol
     nombre: str = Field(min_length=2, max_length=100)
+    tipo: TipoRol
     descripcion: str | None = Field(default=None, max_length=300)
     permisos: list[str] = []
 
 
+class RolDuplicar(BaseModel):
+    codigo: CodigoRol
+    nombre: str = Field(min_length=2, max_length=100)
+
+
 class RolCambio(BaseModel):
     nombre: str | None = Field(default=None, min_length=2, max_length=100)
+    tipo: TipoRol | None = None
     descripcion: str | None = Field(default=None, max_length=300)
     activo: bool | None = None
     permisos: list[str] | None = None
@@ -59,6 +76,8 @@ class RolSalida(Esquema):
     id: uuid.UUID
     codigo: str
     nombre: str
+    tipo: str
+    estandar: bool
     descripcion: str | None
     activo: bool
     permisos: list[str]
@@ -68,6 +87,7 @@ class RolResumen(Esquema):
     id: uuid.UUID
     codigo: str
     nombre: str
+    tipo: str
 
 
 # Usuarios

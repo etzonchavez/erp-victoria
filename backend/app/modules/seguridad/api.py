@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import crear_token
-from app.modules.seguridad import service
+from app.modules.seguridad import catalogo, service
 from app.modules.seguridad.deps import requiere, usuario_actual
 from app.modules.seguridad.models import Rol, Usuario
 from app.modules.seguridad.schemas import (
@@ -19,8 +19,10 @@ from app.modules.seguridad.schemas import (
     PermisoSalida,
     RolCambio,
     RolCrear,
+    RolDuplicar,
     RolSalida,
     Sesion,
+    TipoRolSalida,
     Token,
     UsuarioCambio,
     UsuarioCrear,
@@ -35,6 +37,8 @@ def _rol(rol: Rol) -> RolSalida:
         id=rol.id,
         codigo=rol.codigo,
         nombre=rol.nombre,
+        tipo=rol.tipo,
+        estandar=rol.estandar,
         descripcion=rol.descripcion,
         activo=rol.activo,
         permisos=sorted(p.codigo for p in rol.permisos),
@@ -92,6 +96,11 @@ def permisos(_: Usuario = Depends(requiere("seguridad.rol.ver")), db: Session = 
     return service.listar_permisos(db)
 
 
+@router.get("/tipos-rol", response_model=list[TipoRolSalida], summary="Tipos de rol")
+def tipos_rol(_: Usuario = Depends(requiere("seguridad.rol.ver"))):
+    return [TipoRolSalida(codigo=c, descripcion=d) for c, d in catalogo.TIPOS_ROL.items()]
+
+
 @router.get("/roles", response_model=list[RolSalida], summary="Listar roles")
 def roles(_: Usuario = Depends(requiere("seguridad.rol.ver")), db: Session = Depends(get_db)):
     return [_rol(r) for r in service.listar_roles(db)]
@@ -104,8 +113,25 @@ def crear_rol(
     db: Session = Depends(get_db),
 ):
     return _rol(
-        service.crear_rol(db, actor, datos.codigo, datos.nombre, datos.descripcion, datos.permisos)
+        service.crear_rol(
+            db, actor, datos.codigo, datos.nombre, datos.tipo, datos.descripcion, datos.permisos
+        )
     )
+
+
+@router.post(
+    "/roles/{rol_id}/duplicar",
+    response_model=RolSalida,
+    status_code=201,
+    summary="Crear un rol propio a partir de otro",
+)
+def duplicar_rol(
+    rol_id: uuid.UUID,
+    datos: RolDuplicar,
+    actor: Usuario = Depends(requiere("seguridad.rol.crear")),
+    db: Session = Depends(get_db),
+):
+    return _rol(service.duplicar_rol(db, actor, rol_id, datos.codigo, datos.nombre))
 
 
 @router.get("/roles/{rol_id}", response_model=RolSalida, summary="Detalle de rol")
