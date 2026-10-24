@@ -1,6 +1,6 @@
-# Qué es ERP Victoria
+# Qué es Victoria ERP
 
-ERP Victoria es un sistema de gestión empresarial en la nube, modular y configurable, pensado para medianas empresas de Latinoamérica.
+Victoria ERP es un sistema de gestión empresarial en la nube, modular y configurable, pensado para medianas empresas de Latinoamérica.
 
 ## Propuesta de valor
 

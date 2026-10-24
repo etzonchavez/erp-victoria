@@ -1,11 +1,17 @@
 from tests.conftest import API, login
 
 
-def crear_rol(client, admin, codigo, permisos, tipo="operativo"):
+def crear_rol(client, admin, funcion, permisos, tipo="operativo"):
     r = client.post(
         f"{API}/roles",
         headers=admin,
-        json={"codigo": codigo, "nombre": codigo, "tipo": tipo, "permisos": permisos},
+        json={
+            "codigo": f"ERP_SEG_{funcion.upper()}",
+            "modulo": "seguridad",
+            "nombre": funcion,
+            "tipo": tipo,
+            "permisos": permisos,
+        },
     )
     assert r.status_code == 201, r.text
     return r.json()
@@ -152,7 +158,8 @@ def test_rol_con_permiso_inexistente_es_rechazado(client, admin):
         f"{API}/roles",
         headers=admin,
         json={
-            "codigo": "malo",
+            "codigo": "ERP_SEG_MALO",
+            "modulo": "seguridad",
             "nombre": "Malo",
             "tipo": "operativo",
             "permisos": ["no.existe.nunca"],
@@ -204,5 +211,5 @@ def test_todo_cambio_queda_auditado(client, admin):
     ]:
         assert esperado in acciones
     edicion = next(e for e in eventos if e["accion"] == "editar")
-    assert edicion["detalle"]["roles"] == {"antes": [], "despues": ["auditable"]}
+    assert edicion["detalle"]["roles"] == {"antes": [], "despues": ["ERP_SEG_AUDITABLE"]}
     assert edicion["usuario_email"] == "admin@erp-victoria.local"

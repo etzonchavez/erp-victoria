@@ -3,11 +3,21 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const CLAVE_TOKEN = "erp-victoria.token";
 
-export type Modulo = { codigo: string; nombre: string; orden: number; activo: boolean; obligatorio: boolean };
+export const NOMBRE_PRODUCTO = "Victoria ERP";
+
+export type Modulo = {
+  codigo: string;
+  nombre: string;
+  abreviatura: string;
+  orden: number;
+  activo: boolean;
+  obligatorio: boolean;
+};
+export type Marca = { nombre_empresa: string | null; logo_url: string | null };
 export type Permiso = { codigo: string; modulo: string; descripcion: string };
 export type TipoRol = { codigo: string; descripcion: string };
 export type RolResumen = { id: string; codigo: string; nombre: string; tipo: string };
-export type Rol = RolResumen & { estandar: boolean; descripcion: string | null; activo: boolean; permisos: string[] };
+export type Rol = RolResumen & { modulo: string; estandar: boolean; descripcion: string | null; activo: boolean; permisos: string[] };
 
 export const NOMBRE_TIPO: Record<string, string> = {
   administrador: "Administrador",
@@ -63,18 +73,25 @@ export function guardarToken(token: string | null) {
   }
 }
 
-export async function api<T>(ruta: string, opciones: { metodo?: string; cuerpo?: unknown } = {}): Promise<T> {
+export async function api<T>(
+  ruta: string,
+  opciones: { metodo?: string; cuerpo?: unknown; archivo?: { campo: string; valor: File } } = {},
+): Promise<T> {
   const token = leerToken();
+  let body: BodyInit | undefined;
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  if (opciones.archivo) {
+    // Formulario multipart: el navegador pone el Content-Type con su separador
+    const form = new FormData();
+    form.append(opciones.archivo.campo, opciones.archivo.valor);
+    body = form;
+  } else if (opciones.cuerpo !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(opciones.cuerpo);
+  }
   let r: Response;
   try {
-    r = await fetch(`${API_URL}/api/v1${ruta}`, {
-      method: opciones.metodo ?? "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: opciones.cuerpo === undefined ? undefined : JSON.stringify(opciones.cuerpo),
-    });
+    r = await fetch(`${API_URL}/api/v1${ruta}`, { method: opciones.metodo ?? "GET", headers, body });
   } catch {
     throw new ErrorApi(0, "sin_conexion", "No hay conexión con el servidor. Verifica que la API esté levantada.");
   }

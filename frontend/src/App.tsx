@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Auditoria from "./paginas/Auditoria";
 import Ingreso from "./paginas/Ingreso";
 import Modulos from "./paginas/Modulos";
+import Personalizacion from "./paginas/Personalizacion";
 import Roles from "./paginas/Roles";
 import Usuarios from "./paginas/Usuarios";
 import { SesionProvider, useSesion } from "./sesion";
@@ -16,6 +17,12 @@ const MENU: { modulo: string; rutas: Ruta[] }[] = [
       { ruta: "usuarios", nombre: "Usuarios", permiso: "seguridad.usuario.ver", pagina: () => <Usuarios /> },
       { ruta: "roles", nombre: "Roles", permiso: "seguridad.rol.ver", pagina: () => <Roles /> },
       { ruta: "modulos", nombre: "Módulos", permiso: "seguridad.modulo.ver", pagina: () => <Modulos /> },
+      {
+        ruta: "personalizacion",
+        nombre: "Personalización",
+        permiso: "seguridad.personalizacion.editar",
+        pagina: () => <Personalizacion />,
+      },
       { ruta: "auditoria", nombre: "Auditoría", permiso: "seguridad.auditoria.ver", pagina: () => <Auditoria /> },
     ],
   },
@@ -24,7 +31,7 @@ const MENU: { modulo: string; rutas: Ruta[] }[] = [
 const rutaActual = () => window.location.hash.replace(/^#\/?/, "");
 
 function Aplicacion() {
-  const { sesion, cargando, salir, puede } = useSesion();
+  const { sesion, cargando, salir, puede, marca } = useSesion();
   const [ruta, setRuta] = useState(rutaActual);
   const [menuAbierto, setMenuAbierto] = useState(false);
 
@@ -64,10 +71,24 @@ function Aplicacion() {
         <button className="boton-icono" onClick={() => setMenuAbierto(!menuAbierto)} aria-expanded={menuAbierto}>
           ☰
         </button>
-        <span className="marca">Victoria</span>
+        {marca.logo_url ? (
+          <img className="marca-logo-movil" src={marca.logo_url} alt={marca.nombre_empresa ?? "Logo de la empresa"} />
+        ) : (
+          <span className="marca">Victoria ERP</span>
+        )}
       </header>
       <nav className={menuAbierto ? "riel abierto" : "riel"} aria-label="Menú principal">
-        <p className="marca">Victoria</p>
+        <div className="riel-marca">
+          {marca.logo_url && (
+            <span className="riel-logo">
+              <img src={marca.logo_url} alt={marca.nombre_empresa ?? "Logo de la empresa"} />
+            </span>
+          )}
+          {marca.nombre_empresa && <p className="riel-empresa">{marca.nombre_empresa}</p>}
+          <p className="marca">
+            Victoria <span>ERP</span>
+          </p>
+        </div>
         {secciones.map((s) => (
           <div key={s.modulo} className="riel-grupo">
             <p className="riel-modulo">{s.nombre}</p>

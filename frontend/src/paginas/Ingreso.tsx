@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
+import { NOMBRE_PRODUCTO } from "../api";
 import { MensajeError } from "../componentes";
 import { useSesion } from "../sesion";
 
 export default function Ingreso() {
-  const { ingresar } = useSesion();
+  const { ingresar, marca } = useSesion();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<unknown>(null);
@@ -25,12 +26,17 @@ export default function Ingreso() {
   return (
     <main className="ingreso">
       <section className="ingreso-marca">
-        <p className="ingreso-nombre">Victoria</p>
+        <p className="ingreso-nombre">
+          Victoria<span>ERP</span>
+        </p>
         <p className="ingreso-lema">Compras, inventarios y finanzas para empresas que operan en Latinoamérica.</p>
       </section>
       <section className="ingreso-form">
         <form onSubmit={enviar} noValidate>
-          <h1>Ingresa a tu empresa</h1>
+          {marca.logo_url && (
+            <img className="ingreso-logo" src={marca.logo_url} alt={marca.nombre_empresa ?? "Logo de la empresa"} />
+          )}
+          <h1>{marca.nombre_empresa ? `Ingresa a ${marca.nombre_empresa}` : `Ingresa a ${NOMBRE_PRODUCTO}`}</h1>
           <label>
             Correo
             <input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />

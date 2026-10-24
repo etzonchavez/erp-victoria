@@ -1,4 +1,4 @@
-# ERP Victoria
+# Victoria ERP
 
 ERP SaaS modular para medianas empresas de Latinoamérica, con núcleo en Compras y SCM y preparado para agentes de IA.
 

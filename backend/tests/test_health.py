@@ -10,11 +10,11 @@ def test_health_responde_ok():
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["app"] == "ERP Victoria"
+    assert body["app"] == "Victoria ERP"
     assert "database" in body
 
 
 def test_documentacion_openapi_disponible():
     response = client.get("/openapi.json")
     assert response.status_code == 200
-    assert response.json()["info"]["title"] == "ERP Victoria"
+    assert response.json()["info"]["title"] == "Victoria ERP"

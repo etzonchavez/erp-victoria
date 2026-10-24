@@ -19,7 +19,7 @@
 | Montos | `NUMERIC(18,4)` + código de moneda ISO 4217 | `monto`, `moneda = 'PEN'` |
 | Fechas y horas | UTC en BD, zona horaria del usuario en pantalla | |
 
-Prefijos de módulo: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` compras, `inv` inventarios, `cxp` cuentas por pagar, `cnt` contabilidad, `cxc` cuentas por cobrar.
+Prefijos de tablas: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` compras, `inv` inventarios, `cxp` cuentas por pagar, `cnt` contabilidad, `cxc` cuentas por cobrar.
 
 ## API
 
@@ -36,6 +36,7 @@ Prefijos de módulo: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` c
 ## Roles
 
 - Todo módulo define en `catalogo.py` un rol estándar por tipo que aplique: administrador, configuración, operativo y consulta.
-- Código del rol estándar: `<modulo>.<puesto>` (ej. `compras.comprador`). Nombre en español, en singular y por puesto de trabajo.
-- Los roles propios del cliente usan códigos sin punto y se crean duplicando uno estándar.
+- Código de todo rol: `ERP_<ABREVIATURA>_<FUNCIÓN>` en mayúsculas (ej. `ERP_COM_ADMINISTRADOR`, `ERP_COM_ANALISTA`). La abreviatura de 3 letras se define en `catalogo.MODULOS`.
+- Nombre del rol en español, en singular y por puesto de trabajo.
+- Los roles propios del cliente siguen la misma nomenclatura y normalmente se crean duplicando uno estándar.
 - Permisos de un rol de consulta: solo acciones `ver`.

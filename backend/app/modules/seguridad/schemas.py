@@ -26,6 +26,7 @@ class Token(BaseModel):
 class ModuloSalida(Esquema):
     codigo: str
     nombre: str
+    abreviatura: str
     orden: int
     activo: bool
     obligatorio: bool
@@ -43,7 +44,8 @@ class PermisoSalida(Esquema):
 
 # Roles
 TipoRol = Literal["administrador", "configuracion", "operativo", "consulta"]
-CodigoRol = Annotated[str, Field(min_length=2, max_length=50, pattern=r"^[a-z0-9_]+$")]
+# La nomenclatura ERP_<MÓDULO>_<FUNCIÓN> se valida en el servicio, que conoce el módulo.
+CodigoRol = Annotated[str, Field(min_length=9, max_length=50)]
 
 
 class TipoRolSalida(BaseModel):
@@ -53,6 +55,7 @@ class TipoRolSalida(BaseModel):
 
 class RolCrear(BaseModel):
     codigo: CodigoRol
+    modulo: str
     nombre: str = Field(min_length=2, max_length=100)
     tipo: TipoRol
     descripcion: str | None = Field(default=None, max_length=300)
@@ -62,6 +65,7 @@ class RolCrear(BaseModel):
 class RolDuplicar(BaseModel):
     codigo: CodigoRol
     nombre: str = Field(min_length=2, max_length=100)
+    modulo: str | None = None
 
 
 class RolCambio(BaseModel):
@@ -75,6 +79,7 @@ class RolCambio(BaseModel):
 class RolSalida(Esquema):
     id: uuid.UUID
     codigo: str
+    modulo: str
     nombre: str
     tipo: str
     estandar: bool
@@ -132,3 +137,14 @@ class AuditoriaSalida(Esquema):
     entidad: str
     entidad_id: str | None
     detalle: dict | None
+
+
+# Personalización
+class PersonalizacionSalida(BaseModel):
+    nombre_empresa: str | None
+    logo_url: str | None
+    actualizado_en: datetime
+
+
+class PersonalizacionCambio(BaseModel):
+    nombre_empresa: str | None = Field(default=None, max_length=150)

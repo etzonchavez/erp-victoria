@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, ErrorApi, guardarToken, leerToken, type Sesion } from "./api";
+import { api, ErrorApi, guardarToken, leerToken, type Marca, type Sesion } from "./api";
 
 type Contexto = {
   sesion: Sesion | null;
@@ -8,6 +8,8 @@ type Contexto = {
   salir: () => void;
   recargar: () => Promise<void>;
   puede: (permiso: string) => boolean;
+  marca: Marca;
+  recargarMarca: () => Promise<void>;
 };
 
 const SesionContext = createContext<Contexto | null>(null);
@@ -15,6 +17,15 @@ const SesionContext = createContext<Contexto | null>(null);
 export function SesionProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [marca, setMarca] = useState<Marca>({ nombre_empresa: null, logo_url: null });
+
+  const recargarMarca = useCallback(async () => {
+    try {
+      setMarca(await api<Marca>("/seguridad/personalizacion"));
+    } catch {
+      /* sin marca: se muestra solo Victoria ERP */
+    }
+  }, []);
 
   const recargar = useCallback(async () => {
     if (!leerToken()) {
@@ -34,7 +45,8 @@ export function SesionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     recargar();
-  }, [recargar]);
+    recargarMarca();
+  }, [recargar, recargarMarca]);
 
   const ingresar = async (email: string, password: string) => {
     const { access_token } = await api<{ access_token: string }>("/seguridad/auth/login", {
@@ -53,7 +65,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   const puede = useCallback((permiso: string) => sesion?.permisos.includes(permiso) ?? false, [sesion]);
 
   return (
-    <SesionContext.Provider value={{ sesion, cargando, ingresar, salir, recargar, puede }}>
+    <SesionContext.Provider value={{ sesion, cargando, ingresar, salir, recargar, puede, marca, recargarMarca }}>
       {children}
     </SesionContext.Provider>
   );

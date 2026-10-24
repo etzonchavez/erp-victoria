@@ -1,12 +1,14 @@
 """Catálogo de módulos, permisos y roles estándar del ERP.
 
 Cada módulo nuevo agrega aquí:
+- su abreviatura de 3 letras (se usa en el código de sus roles)
 - sus permisos, con formato modulo.objeto.accion
 - sus roles estándar, uno por tipo que aplique (ver TIPOS_ROL)
 
 Al iniciar la API el catálogo se sincroniza con la base de datos.
 """
 
+import re
 from dataclasses import dataclass, field
 
 
@@ -14,6 +16,7 @@ from dataclasses import dataclass, field
 class ModuloDef:
     codigo: str
     nombre: str
+    abreviatura: str
     orden: int
     obligatorio: bool = False
 
@@ -29,11 +32,12 @@ class PermisoDef:
 
 
 MODULOS: list[ModuloDef] = [
-    ModuloDef("seguridad", "Seguridad", 10, obligatorio=True),
-    ModuloDef("maestros", "Maestros", 20),
-    ModuloDef("solicitudes", "Solicitudes de compra", 30),
-    ModuloDef("compras", "Compras", 40),
+    ModuloDef("seguridad", "Seguridad", "SEG", 10, obligatorio=True),
+    ModuloDef("maestros", "Maestros", "MAE", 20),
+    ModuloDef("solicitudes", "Solicitudes de compra", "SOL", 30),
+    ModuloDef("compras", "Compras", "COM", 40),
 ]
+ABREVIATURAS: dict[str, str] = {m.codigo: m.abreviatura for m in MODULOS}
 
 PERMISOS: list[PermisoDef] = [
     PermisoDef("seguridad.usuario.ver", "Ver usuarios"),
@@ -44,6 +48,7 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("seguridad.rol.editar", "Editar roles y sus permisos"),
     PermisoDef("seguridad.modulo.ver", "Ver módulos"),
     PermisoDef("seguridad.modulo.editar", "Activar y desactivar módulos"),
+    PermisoDef("seguridad.personalizacion.editar", "Cambiar el logo y el nombre de la empresa"),
     PermisoDef("seguridad.auditoria.ver", "Consultar la auditoría"),
 ]
 
@@ -56,12 +61,33 @@ TIPOS_ROL: dict[str, str] = {
     "consulta": "Solo lectura y auditoría",
 }
 
+# Nomenclatura de roles: ERP_<ABREVIATURA DEL MÓDULO>_<FUNCIÓN>, en mayúsculas.
+# Ejemplos: ERP_SEG_ADMINISTRADOR, ERP_COM_ANALISTA.
+PATRON_CODIGO_ROL = re.compile(r"^ERP_([A-Z]{3})_[A-Z0-9]+(?:_[A-Z0-9]+)*$")
+LARGO_MAXIMO_CODIGO_ROL = 50
+
+
+def prefijo_rol(modulo: str) -> str:
+    return f"ERP_{ABREVIATURAS[modulo]}_"
+
+
+def validar_codigo_rol(codigo: str, modulo: str) -> str | None:
+    """Devuelve el motivo si el código no cumple la nomenclatura; None si es válido."""
+    prefijo = prefijo_rol(modulo)
+    if len(codigo) > LARGO_MAXIMO_CODIGO_ROL:
+        return f"El código no puede superar {LARGO_MAXIMO_CODIGO_ROL} caracteres"
+    if not PATRON_CODIGO_ROL.match(codigo) or not codigo.startswith(prefijo):
+        return (
+            f"El código debe seguir el formato {prefijo}FUNCION: mayúsculas, números y guion "
+            f"bajo (ejemplo: {prefijo}ANALISTA)"
+        )
+    return None
+
 
 @dataclass(frozen=True)
 class RolDef:
-    """Rol estándar. Su código lleva punto (modulo.nombre): nunca choca con uno del cliente."""
-
     codigo: str
+    modulo: str
     nombre: str
     tipo: str
     descripcion: str
@@ -70,27 +96,31 @@ class RolDef:
 
 ROLES_ESTANDAR: list[RolDef] = [
     RolDef(
-        "seguridad.administrador",
+        "ERP_SEG_ADMINISTRADOR",
+        "seguridad",
         "Administrador de seguridad",
         "administrador",
-        "Gestiona usuarios, roles, módulos y consulta la auditoría.",
+        "Gestiona usuarios, roles, módulos, la personalización y consulta la auditoría.",
         [p.codigo for p in PERMISOS if p.modulo == "seguridad"],
     ),
     RolDef(
-        "seguridad.configurador",
+        "ERP_SEG_CONFIGURADOR",
+        "seguridad",
         "Configurador del sistema",
         "configuracion",
-        "Activa módulos y diseña los roles de la empresa.",
+        "Activa módulos, diseña los roles y personaliza el logo de la empresa.",
         [
             "seguridad.modulo.ver",
             "seguridad.modulo.editar",
             "seguridad.rol.ver",
             "seguridad.rol.crear",
             "seguridad.rol.editar",
+            "seguridad.personalizacion.editar",
         ],
     ),
     RolDef(
-        "seguridad.gestor_usuarios",
+        "ERP_SEG_GESTOR_USUARIOS",
+        "seguridad",
         "Gestor de usuarios",
         "operativo",
         "Da de alta usuarios, cambia contraseñas y asigna roles existentes.",
@@ -102,7 +132,8 @@ ROLES_ESTANDAR: list[RolDef] = [
         ],
     ),
     RolDef(
-        "seguridad.auditor",
+        "ERP_SEG_AUDITOR",
+        "seguridad",
         "Auditor",
         "consulta",
         "Consulta usuarios, roles, módulos y la auditoría sin poder cambiar nada.",

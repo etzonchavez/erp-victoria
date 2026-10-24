@@ -3,7 +3,18 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Uuid
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    Table,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, ConAuditoria, ahora_utc
@@ -33,6 +44,7 @@ class Modulo(Base):
 
     codigo: Mapped[str] = mapped_column(String(50), primary_key=True)
     nombre: Mapped[str] = mapped_column(String(100))
+    abreviatura: Mapped[str] = mapped_column(String(3))
     orden: Mapped[int] = mapped_column(Integer, default=0)
     activo: Mapped[bool] = mapped_column(Boolean, default=False)
     obligatorio: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -50,6 +62,7 @@ class Rol(ConAuditoria, Base):
     __tablename__ = "seg_rol"
 
     codigo: Mapped[str] = mapped_column(String(50), unique=True)
+    modulo: Mapped[str] = mapped_column(ForeignKey("seg_modulo.codigo"))
     nombre: Mapped[str] = mapped_column(String(100))
     descripcion: Mapped[str | None] = mapped_column(String(300), nullable=True)
     tipo: Mapped[str] = mapped_column(String(20), default="operativo", server_default="operativo")
@@ -83,3 +96,18 @@ class Auditoria(Base):
     entidad: Mapped[str] = mapped_column(String(50), index=True)
     entidad_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     detalle: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+
+class Personalizacion(Base):
+    """Marca del cliente: una sola fila (id = 1)."""
+
+    __tablename__ = "seg_personalizacion"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    nombre_empresa: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    logo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    logo_tipo: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=ahora_utc, onupdate=ahora_utc
+    )
+    actualizado_por: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)

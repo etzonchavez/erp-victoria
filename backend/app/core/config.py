@@ -8,9 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    app_name: str = "ERP Victoria"
+    app_name: str = "Victoria ERP"
     app_env: str = "local"
-    app_version: str = "0.3.0"
+    app_version: str = "0.4.0"
     database_url: str = "sqlite+pysqlite:///:memory:"
     secret_key: str = "solo-para-desarrollo-cambiar-en-produccion"
     cors_origins: str = "http://localhost:5173"

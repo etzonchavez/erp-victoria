@@ -1,10 +1,10 @@
 # Seguridad
 
-**Versión:** 0.3.0 · **Estado:** disponible
+**Versión:** 0.4.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
-Controla quién ingresa a ERP Victoria y qué puede hacer cada persona. Permite al administrador crear usuarios, agruparlos en roles, activar solo los módulos que la empresa usa y consultar un registro de todo lo que ocurre.
+Controla quién ingresa a Victoria ERP y qué puede hacer cada persona. Permite al administrador crear usuarios, agruparlos en roles, activar solo los módulos que la empresa usa, personalizar el logo y el nombre de la empresa y consultar un registro de todo lo que ocurre.
 
 ## 2. Roles y permisos
 
@@ -28,16 +28,27 @@ Todo rol pertenece a uno de estos tipos:
 
 Cada módulo trae roles estándar listos para usar. Se crean solos al instalar o actualizar el ERP, no se pueden editar ni desactivar, y cada versión los mantiene al día. Para adaptarlos a tu empresa, usa **Duplicar**: la copia conserva el tipo y los permisos, y sí se puede ajustar.
 
-Su código lleva el nombre del módulo y un punto (`seguridad.auditor`); los roles propios no pueden usar punto, así nunca coinciden.
+### Nomenclatura de roles
+
+Todo rol, estándar o propio, usa el código `ERP_<MÓDULO>_<FUNCIÓN>` en mayúsculas:
+
+| Módulo | Abreviatura | Ejemplo |
+| --- | --- | --- |
+| Seguridad | SEG | `ERP_SEG_ADMINISTRADOR` |
+| Maestros | MAE | `ERP_MAE_ANALISTA` |
+| Solicitudes de compra | SOL | `ERP_SOL_APROBADOR` |
+| Compras | COM | `ERP_COM_ANALISTA` |
+
+El código se genera desde el nombre del rol, debe usar la abreviatura del módulo al que pertenece el rol y solo admite letras mayúsculas, números y guion bajo. Si una versión nueva del ERP trae un rol estándar con el mismo código que un rol propio, el rol propio se renombra con el sufijo `_CLIENTE` y queda registrado en la auditoría.
 
 Roles estándar de Seguridad:
 
 | Rol | Tipo | Código | Permisos |
 | --- | --- | --- | --- |
-| Administrador de seguridad | Administrador | `seguridad.administrador` | Todos los del módulo |
-| Configurador del sistema | Configuración | `seguridad.configurador` | Módulos (ver, editar) y roles (ver, crear, editar) |
-| Gestor de usuarios | Operativo | `seguridad.gestor_usuarios` | Usuarios (ver, crear, editar) y ver roles |
-| Auditor | Consulta | `seguridad.auditor` | Ver usuarios, roles, módulos y auditoría |
+| Administrador de seguridad | Administrador | `ERP_SEG_ADMINISTRADOR` | Todos los del módulo |
+| Configurador del sistema | Configuración | `ERP_SEG_CONFIGURADOR` | Módulos, roles y personalización |
+| Gestor de usuarios | Operativo | `ERP_SEG_GESTOR_USUARIOS` | Usuarios (ver, crear, editar) y ver roles |
+| Auditor | Consulta | `ERP_SEG_AUDITOR` | Ver usuarios, roles, módulos y auditoría |
 
 Permisos del módulo:
 
@@ -51,6 +62,7 @@ Permisos del módulo:
 | `seguridad.rol.editar` | Editar roles y sus permisos |
 | `seguridad.modulo.ver` | Ver los módulos |
 | `seguridad.modulo.editar` | Activar y desactivar módulos |
+| `seguridad.personalizacion.editar` | Cambiar el logo y el nombre de la empresa |
 | `seguridad.auditoria.ver` | Consultar la auditoría |
 
 ## 3. Flujo del proceso
@@ -87,7 +99,8 @@ Permisos del módulo:
 | Campo | Regla |
 | --- | --- |
 | Nombre | Obligatorio, de 2 a 100 caracteres |
-| Código | Se genera desde el nombre; único; minúsculas, números y guion bajo; no se puede cambiar |
+| Módulo | Obligatorio; define la abreviatura del código |
+| Código | `ERP_<MÓDULO>_<FUNCIÓN>`; se genera desde el nombre; único; no se puede cambiar |
 | Tipo | Obligatorio: administrador, configuración, operativo o consulta |
 | Descripción | Opcional, hasta 300 caracteres |
 | Permisos | Agrupados por módulo, con opción de marcar todos |
@@ -96,6 +109,15 @@ Permisos del módulo:
 ### Módulos
 
 Lista de módulos con un interruptor para activarlos o desactivarlos. Seguridad está siempre activo.
+
+### Personalización
+
+| Campo | Regla |
+| --- | --- |
+| Logo | PNG, JPG o WebP de hasta 500 KB; el formato se verifica por el contenido del archivo. No se acepta SVG porque puede contener código |
+| Nombre de la empresa | Opcional, hasta 150 caracteres |
+
+El logo y el nombre aparecen en la pantalla de ingreso (antes de iniciar sesión) y en el menú lateral.
 
 ### Auditoría
 
@@ -158,9 +180,14 @@ Porque sin él nadie podría ingresar ni administrar el ERP.
 | GET | `/api/v1/seguridad/permisos` | `seguridad.rol.ver` |
 | GET | `/api/v1/seguridad/modulos` | `seguridad.modulo.ver` |
 | PATCH | `/api/v1/seguridad/modulos/{codigo}` | `seguridad.modulo.editar` |
+| GET | `/api/v1/seguridad/personalizacion` | Público |
+| GET | `/api/v1/seguridad/personalizacion/logo` | Público |
+| PUT | `/api/v1/seguridad/personalizacion` | `seguridad.personalizacion.editar` |
+| PUT | `/api/v1/seguridad/personalizacion/logo` | `seguridad.personalizacion.editar` |
+| DELETE | `/api/v1/seguridad/personalizacion/logo` | `seguridad.personalizacion.editar` |
 | GET | `/api/v1/seguridad/auditoria` | `seguridad.auditoria.ver` |
 
-Tablas: `seg_usuario`, `seg_rol`, `seg_permiso`, `seg_modulo`, `seg_usuario_rol`, `seg_rol_permiso`, `seg_auditoria`.
+Tablas: `seg_usuario`, `seg_rol`, `seg_permiso`, `seg_modulo`, `seg_usuario_rol`, `seg_rol_permiso`, `seg_auditoria`, `seg_personalizacion`.
 
 Para que un módulo nuevo traiga sus roles estándar, agrégalos en `catalogo.ROLES_ESTANDAR` con un rol por tipo que aplique.
 

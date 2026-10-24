@@ -2,11 +2,12 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.errors import no_encontrado
 from app.core.security import crear_token
 from app.modules.seguridad import catalogo, service
 from app.modules.seguridad.deps import requiere, usuario_actual
@@ -17,6 +18,8 @@ from app.modules.seguridad.schemas import (
     ModuloCambio,
     ModuloSalida,
     PermisoSalida,
+    PersonalizacionCambio,
+    PersonalizacionSalida,
     RolCambio,
     RolCrear,
     RolDuplicar,
@@ -36,6 +39,7 @@ def _rol(rol: Rol) -> RolSalida:
     return RolSalida(
         id=rol.id,
         codigo=rol.codigo,
+        modulo=rol.modulo,
         nombre=rol.nombre,
         tipo=rol.tipo,
         estandar=rol.estandar,
@@ -114,7 +118,14 @@ def crear_rol(
 ):
     return _rol(
         service.crear_rol(
-            db, actor, datos.codigo, datos.nombre, datos.tipo, datos.descripcion, datos.permisos
+            db,
+            actor,
+            datos.codigo,
+            datos.modulo,
+            datos.nombre,
+            datos.tipo,
+            datos.descripcion,
+            datos.permisos,
         )
     )
 
@@ -131,7 +142,7 @@ def duplicar_rol(
     actor: Usuario = Depends(requiere("seguridad.rol.crear")),
     db: Session = Depends(get_db),
 ):
-    return _rol(service.duplicar_rol(db, actor, rol_id, datos.codigo, datos.nombre))
+    return _rol(service.duplicar_rol(db, actor, rol_id, datos.codigo, datos.nombre, datos.modulo))
 
 
 @router.get("/roles/{rol_id}", response_model=RolSalida, summary="Detalle de rol")
@@ -202,3 +213,78 @@ def auditoria(
     db: Session = Depends(get_db),
 ):
     return service.listar_auditoria(db, entidad, limite)
+
+
+# ---------------------------------------------------------------- personalización
+
+
+def _personalizacion(p, request: Request) -> PersonalizacionSalida:
+    logo = None
+    if p.logo:
+        version = int(p.actualizado_en.timestamp())
+        logo = str(request.url_for("logo_empresa").include_query_params(v=version))
+    return PersonalizacionSalida(
+        nombre_empresa=p.nombre_empresa, logo_url=logo, actualizado_en=p.actualizado_en
+    )
+
+
+@router.get(
+    "/personalizacion",
+    response_model=PersonalizacionSalida,
+    summary="Nombre y logo de la empresa (público, se usa en la pantalla de ingreso)",
+)
+def personalizacion(request: Request, db: Session = Depends(get_db)):
+    return _personalizacion(service.obtener_personalizacion(db), request)
+
+
+@router.get("/personalizacion/logo", name="logo_empresa", summary="Logo de la empresa (público)")
+def logo_empresa(db: Session = Depends(get_db)):
+    p = service.obtener_personalizacion(db)
+    if not p.logo:
+        raise no_encontrado("El logo")
+    return Response(
+        content=p.logo,
+        media_type=p.logo_tipo,
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.put(
+    "/personalizacion", response_model=PersonalizacionSalida, summary="Cambiar nombre de empresa"
+)
+def cambiar_personalizacion(
+    datos: PersonalizacionCambio,
+    request: Request,
+    actor: Usuario = Depends(requiere("seguridad.personalizacion.editar")),
+    db: Session = Depends(get_db),
+):
+    return _personalizacion(
+        service.cambiar_nombre_empresa(db, actor, datos.nombre_empresa), request
+    )
+
+
+@router.put(
+    "/personalizacion/logo",
+    response_model=PersonalizacionSalida,
+    summary="Subir logo (PNG, JPG o WebP, máximo 500 KB)",
+)
+async def subir_logo(
+    request: Request,
+    archivo: UploadFile = File(...),
+    actor: Usuario = Depends(requiere("seguridad.personalizacion.editar")),
+    db: Session = Depends(get_db),
+):
+    datos = await archivo.read(service.TAMANO_MAXIMO_LOGO + 1)
+    return _personalizacion(service.cambiar_logo(db, actor, datos), request)
+
+
+@router.delete("/personalizacion/logo", response_model=PersonalizacionSalida, summary="Quitar logo")
+def quitar_logo(
+    request: Request,
+    actor: Usuario = Depends(requiere("seguridad.personalizacion.editar")),
+    db: Session = Depends(get_db),
+):
+    return _personalizacion(service.quitar_logo(db, actor), request)

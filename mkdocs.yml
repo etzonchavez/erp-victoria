@@ -1,5 +1,5 @@
-site_name: ERP Victoria — Documentación
-site_description: Documentación general, de arquitectura y funcional de ERP Victoria
+site_name: Victoria ERP — Documentación
+site_description: Documentación general, de arquitectura y funcional de Victoria ERP
 docs_dir: docs
 theme:
   name: material
@@ -20,7 +20,7 @@ markdown_extensions:
 nav:
   - Inicio: index.md
   - General:
-      - Qué es ERP Victoria: general/index.md
+      - Qué es Victoria ERP: general/index.md
       - Glosario: general/glosario.md
   - Arquitectura:
       - Visión general: arquitectura/index.md

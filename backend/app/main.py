@@ -1,4 +1,4 @@
-"""Punto de entrada de la API de ERP Victoria."""
+"""Punto de entrada de la API de Victoria ERP."""
 
 from contextlib import asynccontextmanager
 
@@ -26,7 +26,7 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description=(
-        "API de ERP Victoria. Toda funcionalidad se expone aquí para el front y los agentes de IA."
+        "API de Victoria ERP. Toda funcionalidad se expone aquí para el front y los agentes de IA."
     ),
     lifespan=lifespan,
 )

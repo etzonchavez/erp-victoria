@@ -1,6 +1,6 @@
 # Arquitectura
 
-ERP Victoria es un monolito modular en capas, desplegado como SaaS con una base de datos por cliente.
+Victoria ERP es un monolito modular en capas, desplegado como SaaS con una base de datos por cliente.
 
 ```
 Front web (React)        Agentes de IA
