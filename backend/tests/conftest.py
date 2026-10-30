@@ -10,10 +10,9 @@ from sqlalchemy import create_engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
-import app.modules.seguridad.models  # noqa: E402, F401
+from app.core.arranque import preparar_sistema  # noqa: E402
 from app.core.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
-from app.modules.seguridad.service import preparar_base  # noqa: E402
 
 ADMIN = {"email": "admin@erp-victoria.local", "password": "Admin123!"}
 API = "/api/v1/seguridad"
@@ -27,7 +26,7 @@ def db():
     Base.metadata.create_all(engine)
     Sesion = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     with Sesion() as s:
-        preparar_base(s)
+        preparar_sistema(s)
 
     def _get_db():
         with Sesion() as s:

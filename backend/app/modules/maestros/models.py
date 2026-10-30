@@ -1,0 +1,102 @@
+"""Tablas del módulo de maestros (prefijo mae_)."""
+
+import uuid
+from datetime import date
+from decimal import Decimal
+
+from sqlalchemy import (
+    Boolean,
+    Date,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base, ConAuditoria
+
+
+class Moneda(ConAuditoria, Base):
+    """Monedas ISO 4217. Se precargan las de los países del roadmap."""
+
+    __tablename__ = "mae_moneda"
+
+    codigo: Mapped[str] = mapped_column(String(3), unique=True)  # PEN, USD
+    nombre: Mapped[str] = mapped_column(String(60))
+    simbolo: Mapped[str] = mapped_column(String(5))
+    decimales: Mapped[int] = mapped_column(Integer, default=2)
+    activo: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class TipoCambio(ConAuditoria, Base):
+    """Tipo de cambio diario de una moneda contra la moneda base (PEN en Perú)."""
+
+    __tablename__ = "mae_tipo_cambio"
+    __table_args__ = (UniqueConstraint("moneda", "moneda_base", "fecha"),)
+
+    moneda: Mapped[str] = mapped_column(ForeignKey("mae_moneda.codigo"), index=True)  # USD
+    moneda_base: Mapped[str] = mapped_column(ForeignKey("mae_moneda.codigo"))  # PEN
+    fecha: Mapped[date] = mapped_column(Date, index=True)
+    compra: Mapped[Decimal] = mapped_column(Numeric(12, 6))
+    venta: Mapped[Decimal] = mapped_column(Numeric(12, 6))
+    fuente: Mapped[str] = mapped_column(String(20), default="manual")  # manual, excel, sbs
+
+
+class Empresa(ConAuditoria, Base):
+    """Empresa legal. Una instalación (base de datos) puede tener varias."""
+
+    __tablename__ = "mae_empresa"
+    __table_args__ = (UniqueConstraint("pais", "identificacion_fiscal"),)
+
+    pais: Mapped[str] = mapped_column(String(2))  # pe
+    identificacion_fiscal: Mapped[str] = mapped_column(String(20))  # RUC en Perú
+    razon_social: Mapped[str] = mapped_column(String(200))
+    nombre_comercial: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    direccion_fiscal: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    moneda_funcional: Mapped[str] = mapped_column(ForeignKey("mae_moneda.codigo"))
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    unidades: Mapped[list["UnidadNegocio"]] = relationship(
+        back_populates="empresa", lazy="selectin", order_by="UnidadNegocio.codigo"
+    )
+
+
+class UnidadNegocio(ConAuditoria, Base):
+    __tablename__ = "mae_unidad_negocio"
+    __table_args__ = (UniqueConstraint("empresa_id", "codigo"),)
+
+    empresa_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("mae_empresa.id"), index=True)
+    codigo: Mapped[str] = mapped_column(String(20))
+    nombre: Mapped[str] = mapped_column(String(150))
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    empresa: Mapped[Empresa] = relationship(back_populates="unidades")
+
+
+class UnidadMedida(ConAuditoria, Base):
+    """Unidad interna (UND, CAJA) mapeada al código oficial (SUNAT Catálogo N.° 03 / UN/ECE)."""
+
+    __tablename__ = "mae_unidad_medida"
+
+    codigo: Mapped[str] = mapped_column(String(10), unique=True)  # UND
+    nombre: Mapped[str] = mapped_column(String(80))
+    codigo_oficial: Mapped[str] = mapped_column(String(5))  # NIU
+    tipo: Mapped[str] = mapped_column(String(20))  # cantidad, peso, volumen…
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class ConversionUnidad(ConAuditoria, Base):
+    """1 unidad origen = factor unidades destino. Ej.: 1 KG = 1000 G.
+
+    Conversiones generales. Las propias de un artículo (1 CAJA = 12 UND) van en el artículo.
+    """
+
+    __tablename__ = "mae_conversion_unidad"
+    __table_args__ = (UniqueConstraint("origen", "destino"),)
+
+    origen: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
+    destino: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
+    factor: Mapped[Decimal] = mapped_column(Numeric(18, 6))

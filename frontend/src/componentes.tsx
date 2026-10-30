@@ -170,3 +170,9 @@ export function useConfirmacion(duracion = 2500) {
   };
   return { listo, confirmar, reiniciar: () => setListo(false) };
 }
+
+/** Fecha sin hora (AAAA-MM-DD) mostrada en español, sin desfase de zona horaria. */
+export const fechaDia = (iso: string) => {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(new Date(a, m - 1, d));
+};

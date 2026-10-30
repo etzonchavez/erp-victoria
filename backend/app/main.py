@@ -6,10 +6,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
+from app.core.arranque import preparar_sistema
 from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.core.errors import registrar_manejadores
-from app.modules.seguridad.service import preparar_base
 
 settings = get_settings()
 
@@ -18,7 +18,7 @@ settings = get_settings()
 async def lifespan(_: FastAPI):
     if settings.bootstrap_on_startup:
         with SessionLocal() as db:
-            preparar_base(db)
+            preparar_sistema(db)
     yield
 
 

@@ -50,6 +50,14 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("seguridad.modulo.editar", "Activar y desactivar módulos"),
     PermisoDef("seguridad.personalizacion.editar", "Cambiar el logo y el nombre de la empresa"),
     PermisoDef("seguridad.auditoria.ver", "Consultar la auditoría"),
+    # Maestros
+    PermisoDef("maestros.empresa.ver", "Ver empresas y unidades de negocio"),
+    PermisoDef("maestros.empresa.editar", "Crear y editar empresas y unidades de negocio"),
+    PermisoDef("maestros.moneda.ver", "Ver monedas y tipos de cambio"),
+    PermisoDef("maestros.moneda.editar", "Activar y editar monedas"),
+    PermisoDef("maestros.tipo_cambio.registrar", "Registrar el tipo de cambio diario"),
+    PermisoDef("maestros.unidad.ver", "Ver unidades de medida y conversiones"),
+    PermisoDef("maestros.unidad.editar", "Crear y editar unidades de medida y conversiones"),
 ]
 
 
@@ -143,5 +151,49 @@ ROLES_ESTANDAR: list[RolDef] = [
             "seguridad.modulo.ver",
             "seguridad.auditoria.ver",
         ],
+    ),
+    RolDef(
+        "ERP_MAE_ADMINISTRADOR",
+        "maestros",
+        "Administrador de maestros",
+        "administrador",
+        "Responsable de los datos maestros: empresas, monedas, tipo de cambio y unidades.",
+        [p.codigo for p in PERMISOS if p.modulo == "maestros"],
+    ),
+    RolDef(
+        "ERP_MAE_CONFIGURADOR",
+        "maestros",
+        "Configurador de maestros",
+        "configuracion",
+        "Configura empresas, unidades de negocio, monedas y unidades de medida.",
+        [
+            "maestros.empresa.ver",
+            "maestros.empresa.editar",
+            "maestros.moneda.ver",
+            "maestros.moneda.editar",
+            "maestros.unidad.ver",
+            "maestros.unidad.editar",
+        ],
+    ),
+    RolDef(
+        "ERP_MAE_ANALISTA",
+        "maestros",
+        "Analista de maestros",
+        "operativo",
+        "Registra el tipo de cambio diario y consulta los maestros.",
+        [
+            "maestros.empresa.ver",
+            "maestros.moneda.ver",
+            "maestros.tipo_cambio.registrar",
+            "maestros.unidad.ver",
+        ],
+    ),
+    RolDef(
+        "ERP_MAE_CONSULTA",
+        "maestros",
+        "Consulta de maestros",
+        "consulta",
+        "Consulta empresas, monedas, tipos de cambio y unidades sin poder cambiarlos.",
+        ["maestros.empresa.ver", "maestros.moneda.ver", "maestros.unidad.ver"],
     ),
 ]

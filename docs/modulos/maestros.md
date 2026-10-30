@@ -1,6 +1,6 @@
 # Maestros
 
-**Versión:** diseño · **Estado:** en construcción (Semana 3)
+**Versión:** 0.6.0 · **Estado:** empresas, monedas, tipo de cambio y unidades disponibles; categorías, artículos y proveedores en construcción (Semana 3)
 
 ## 1. Objetivo del módulo
 
@@ -11,13 +11,16 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | Rol estándar | Tipo | Para quién |
 | --- | --- | --- |
 | `ERP_MAE_ADMINISTRADOR` | administrador | Responsable de datos maestros |
-| `ERP_MAE_ANALISTA` | operativo | Crea y edita proveedores y artículos |
+| `ERP_MAE_CONFIGURADOR` | configuracion | Configura empresas, unidades de negocio, monedas y unidades de medida |
+| `ERP_MAE_ANALISTA` | operativo | Registra el tipo de cambio diario; más adelante, proveedores y artículos |
 | `ERP_MAE_CONSULTA` | consulta | Solo consulta |
 
 | Permiso | Permite |
 | --- | --- |
-| `maestros.empresa.ver` / `.editar` | Datos de la empresa y unidades de negocio |
-| `maestros.moneda.ver` / `.editar` | Monedas y unidades de medida |
+| `maestros.empresa.ver` / `.editar` | Empresas y unidades de negocio |
+| `maestros.moneda.ver` / `.editar` | Ver monedas y tipos de cambio / activar y editar monedas |
+| `maestros.tipo_cambio.registrar` | Registrar o corregir el tipo de cambio de una fecha |
+| `maestros.unidad.ver` / `.editar` | Unidades de medida y conversiones generales |
 | `maestros.proveedor.ver` / `.crear` / `.editar` | Proveedores |
 | `maestros.categoria.ver` / `.editar` | Árbol de categorías y su perfil contable |
 | `maestros.articulo.ver` / `.crear` / `.editar` | Artículos |
@@ -63,9 +66,56 @@ La pantalla muestra el árbol y, en cada categoría, el **perfil efectivo** y su
 
 En la ficha del artículo se muestra, solo para lectura, la **combinación contable resultante** (cuenta de cargo, impuesto, cuenta por pagar).
 
-### Proveedores, empresa, unidades de negocio, monedas, unidades de medida
+### Empresas
 
-Se detallan al construirlos (Semana 3, tareas 1 y 4).
+Una instalación de Victoria ERP puede tener **varias empresas legales** (por ejemplo, un grupo con tres RUC).
+
+| Campo | Regla |
+| --- | --- |
+| País | Solo países con localización disponible (hoy: Perú) |
+| RUC | 11 dígitos, prefijo 10, 15, 16, 17 o 20 y dígito verificador válido (algoritmo SUNAT); único por país. **No se puede cambiar** |
+| Razón social | Obligatoria, hasta 200 caracteres |
+| Nombre comercial | Opcional |
+| Dirección fiscal | Opcional |
+| Moneda funcional | Por defecto la del país (PEN). **No se puede cambiar**: la contabilidad se lleva en esa moneda |
+| Activa | Una empresa inactiva no opera |
+
+Al crear una empresa se crea su unidad de negocio **Principal**, para que pueda operar de inmediato.
+
+### Unidades de negocio
+
+Sedes, divisiones o líneas de negocio de una empresa. Se administran dentro de la ficha de la empresa.
+
+| Campo | Regla |
+| --- | --- |
+| Código | Mayúsculas, números, `-` o `_`, hasta 20; único dentro de la empresa; no cambia |
+| Nombre | Obligatorio |
+| Activa | La empresa siempre conserva al menos una unidad activa |
+
+### Monedas y tipo de cambio
+
+- Vienen precargadas PEN y USD (activas) y EUR, COP, PAB y CLP (inactivas). Se pueden agregar otras con su código ISO 4217.
+- No se desactiva una moneda que sea la moneda funcional de una empresa activa.
+- **Tipo de cambio:** un registro por moneda, moneda base y fecha, con precio de **compra** y **venta** (hasta 6 decimales).
+    - No se registran fechas futuras y la venta no puede ser menor que la compra.
+    - Registrar otra vez la misma fecha **corrige** el valor y queda en la auditoría.
+    - Si una fecha no tiene registro (fin de semana o feriado), el ERP usa el **último tipo de cambio anterior**.
+- La carga automática desde la SBS o SUNAT está prevista para 2027.
+
+### Unidades de medida
+
+| Campo | Regla |
+| --- | --- |
+| Código interno | Mayúsculas y números, hasta 10 (ej. `UND`, `CJA`); no cambia |
+| Nombre | Obligatorio |
+| Código SUNAT | Código del Catálogo N.° 03 de SUNAT (UN/ECE Rec. 20), 2 o 3 caracteres (ej. `NIU`, `KGM`, `ZZ`). Se usará en los comprobantes electrónicos |
+| Tipo | Cantidad, servicio, peso, volumen, longitud, área o tiempo |
+
+Vienen precargadas 20 unidades de uso común. **Conversiones generales** (1 KG = 1000 G, 1 DOC = 12 UND…): solo entre unidades del mismo tipo y una sola por par de unidades (la inversa se calcula). Las conversiones propias de un artículo (1 CAJA = 12 UND) se definen en el artículo.
+
+### Proveedores
+
+Se detallan al construirlos (Semana 3, tarea 4).
 
 ## 5. Reglas de negocio
 
@@ -74,16 +124,24 @@ Se detallan al construirlos (Semana 3, tareas 1 y 4).
 - No se puede eliminar una categoría con artículos ni con subcategorías; solo desactivarla.
 - Todo cambio queda en la auditoría.
 
-## 6. Reportes
+## 6. Pendiente
+
+- Restringir el acceso de cada usuario a determinadas empresas y unidades de negocio (hoy ve todas).
+
+## 7. Reportes
 
 - Artículos por categoría con su combinación contable (exportable a Excel).
 
-## 7. Configuración por país
+## 8. Configuración por país
 
 La plantilla contable, los impuestos y las unidades de medida precargadas vienen del paquete del país. Perú: [plantilla PCGE](../paises/peru.md).
 
-## 8. Preguntas frecuentes
+## 9. Preguntas frecuentes
 
 **¿El usuario de compras tiene que saber de cuentas contables?** No. Elige el artículo; la cuenta sale de la categoría.
+
+**Hoy es feriado y no hay tipo de cambio, ¿qué pasa?** El ERP toma el último registrado antes de esa fecha.
+
+**¿Puedo cambiar el RUC de una empresa mal registrada?** No. Desactívala y crea la empresa correcta; así la auditoría conserva la historia.
 
 **¿Qué pasa cuando entre en vigencia el PCGE 2026?** Se agrega la plantilla `PCGE-2026` y el contador reasigna las cuentas de los perfiles; artículos y categorías no cambian.

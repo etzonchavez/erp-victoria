@@ -19,6 +19,53 @@ export type TipoRol = { codigo: string; descripcion: string };
 export type RolResumen = { id: string; codigo: string; nombre: string; tipo: string };
 export type Rol = RolResumen & { modulo: string; estandar: boolean; descripcion: string | null; activo: boolean; permisos: string[] };
 
+// Maestros
+export type Pais = { codigo: string; nombre: string; moneda: string; nombre_identificacion_fiscal: string };
+export type UnidadNegocio = { id: string; empresa_id: string; codigo: string; nombre: string; activo: boolean };
+export type Empresa = {
+  id: string;
+  pais: string;
+  identificacion_fiscal: string;
+  razon_social: string;
+  nombre_comercial: string | null;
+  direccion_fiscal: string | null;
+  moneda_funcional: string;
+  activo: boolean;
+  unidades: UnidadNegocio[];
+};
+export type Moneda = { codigo: string; nombre: string; simbolo: string; decimales: number; activo: boolean };
+export type TipoCambio = {
+  id: string;
+  moneda: string;
+  moneda_base: string;
+  fecha: string;
+  compra: string;
+  venta: string;
+  fuente: string;
+  actualizado_en: string;
+};
+export type UnidadMedida = { codigo: string; nombre: string; codigo_oficial: string; tipo: string; activo: boolean };
+export type Conversion = { id: string; origen: string; destino: string; factor: string };
+
+export const NOMBRE_TIPO_UNIDAD: Record<string, string> = {
+  cantidad: "Cantidad",
+  servicio: "Servicio",
+  peso: "Peso",
+  volumen: "Volumen",
+  longitud: "Longitud",
+  area: "Área",
+  tiempo: "Tiempo",
+};
+
+/** Fecha local de hoy en formato AAAA-MM-DD (no UTC: en Lima a las 8 p. m. ya sería mañana en UTC). */
+export const hoyLocal = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/** Quita ceros sobrantes de un decimal que llega como texto: "3.720000" → "3.72". */
+export const decimal = (v: string) => (v.includes(".") ? v.replace(/0+$/, "").replace(/\.$/, "") : v);
+
 export const NOMBRE_TIPO: Record<string, string> = {
   administrador: "Administrador",
   configuracion: "Configuración",

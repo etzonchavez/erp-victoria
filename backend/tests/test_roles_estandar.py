@@ -11,10 +11,13 @@ def roles(client, admin):
     return {r["codigo"]: r for r in client.get(f"{API}/roles", headers=admin).json()}
 
 
-def test_el_erp_trae_un_rol_estandar_por_tipo_en_seguridad(client, admin):
+def test_cada_modulo_trae_un_rol_estandar_por_tipo(client, admin):
     estandar = [r for r in roles(client, admin).values() if r["estandar"]]
-    assert {r["tipo"] for r in estandar} == set(catalogo.TIPOS_ROL)
-    assert all(r["codigo"].startswith("ERP_SEG_") for r in estandar)
+    for modulo in ("seguridad", "maestros"):
+        delmodulo = [r for r in estandar if r["modulo"] == modulo]
+        assert sorted(r["tipo"] for r in delmodulo) == sorted(catalogo.TIPOS_ROL), modulo
+        prefijo = catalogo.prefijo_rol(modulo)
+        assert all(r["codigo"].startswith(prefijo) for r in delmodulo)
 
 
 def test_roles_estandar_salen_primero_y_ordenados_por_tipo(client, admin):
@@ -27,7 +30,11 @@ def test_roles_estandar_salen_primero_y_ordenados_por_tipo(client, admin):
     }
     client.post(f"{API}/roles", headers=admin, json=crear)
     lista = client.get(f"{API}/roles", headers=admin).json()
-    assert [r["tipo"] for r in lista[:4]] == list(catalogo.TIPOS_ROL)
+    estandar = [r for r in lista if r["estandar"]]
+    assert lista[: len(estandar)] == estandar  # los estándar primero
+    orden = list(catalogo.TIPOS_ROL)
+    tipos = [orden.index(r["tipo"]) for r in estandar]
+    assert tipos == sorted(tipos)  # agrupados por tipo
     assert lista[-1]["codigo"] == "ERP_SEG_PROPIO"
 
 

@@ -2,6 +2,14 @@
 
 **Moneda funcional:** PEN · **Estado:** plantilla contable base en construcción (Semana 3)
 
+## Identificación fiscal
+
+**RUC**: 11 dígitos, prefijo 10 (persona natural), 15, 16, 17 o 20 (persona jurídica) y dígito verificador módulo 11 con pesos 5-4-3-2-7-6-5-4-3-2. Implementado en `backend/app/localizacion/pe`.
+
+## Unidades de medida
+
+Código oficial según el Catálogo N.° 03 de SUNAT (UN/ECE Rec. 20): `NIU` unidad, `ZZ` servicio, `KGM` kilogramo, `LTR` litro, `BX` caja, entre otros.
+
 ## Plan de cuentas
 
 | Plantilla | Norma | Uso en Victoria ERP |

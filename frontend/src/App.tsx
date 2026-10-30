@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Auditoria from "./paginas/Auditoria";
+import Empresas from "./paginas/Empresas";
+import Monedas from "./paginas/Monedas";
+import Unidades from "./paginas/Unidades";
 import Ingreso from "./paginas/Ingreso";
 import Modulos from "./paginas/Modulos";
 import Personalizacion from "./paginas/Personalizacion";
@@ -16,6 +19,15 @@ type Ruta = { ruta: string; nombre: string; permiso: string; pagina: () => React
  * - grupo "administracion": configuración del ERP; van plegadas en "Administración" al pie del menú.
  */
 const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[] }[] = [
+  {
+    modulo: "maestros",
+    grupo: "negocio",
+    rutas: [
+      { ruta: "empresas", nombre: "Empresas", permiso: "maestros.empresa.ver", pagina: () => <Empresas /> },
+      { ruta: "monedas", nombre: "Monedas y tipo de cambio", permiso: "maestros.moneda.ver", pagina: () => <Monedas /> },
+      { ruta: "unidades", nombre: "Unidades de medida", permiso: "maestros.unidad.ver", pagina: () => <Unidades /> },
+    ],
+  },
   {
     modulo: "seguridad",
     grupo: "administracion",

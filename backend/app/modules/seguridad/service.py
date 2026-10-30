@@ -208,8 +208,17 @@ def listar_permisos(db: Session) -> list[Permiso]:
 
 def listar_roles(db: Session) -> list[Rol]:
     orden_tipo = list(catalogo.TIPOS_ROL)
+    orden_modulo = {m.codigo: m.orden for m in catalogo.MODULOS}
     roles = db.scalars(select(Rol))
-    return sorted(roles, key=lambda r: (not r.estandar, orden_tipo.index(r.tipo), r.nombre))
+    return sorted(
+        roles,
+        key=lambda r: (
+            not r.estandar,
+            orden_tipo.index(r.tipo),
+            orden_modulo.get(r.modulo, 999),
+            r.nombre,
+        ),
+    )
 
 
 def obtener_rol(db: Session, rol_id: uuid.UUID) -> Rol:
