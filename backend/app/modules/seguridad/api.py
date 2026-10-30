@@ -269,7 +269,7 @@ def cambiar_personalizacion(
 @router.put(
     "/personalizacion/logo",
     response_model=PersonalizacionSalida,
-    summary="Subir logo (PNG, JPG o WebP, máximo 500 KB)",
+    summary="Subir logo (PNG, JPG o WebP, máximo 2 MB)",
 )
 async def subir_logo(
     request: Request,

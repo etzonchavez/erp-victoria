@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, NOMBRE_TIPO, type Rol, type Usuario } from "../api";
-import { Encabezado, Estado, MensajeError, Panel, fecha } from "../componentes";
+import { BotonAccion, Encabezado, Estado, MensajeError, Panel, fecha } from "../componentes";
+import { useAvisos } from "../avisos";
 import { useSesion } from "../sesion";
 
 type Formulario = {
@@ -23,6 +24,7 @@ export default function Usuarios() {
   const [form, setForm] = useState<Formulario>(VACIO);
   const [errorForm, setErrorForm] = useState<unknown>(null);
   const [guardando, setGuardando] = useState(false);
+  const { avisar } = useAvisos();
 
   const cargar = useCallback(async () => {
     try {
@@ -69,6 +71,7 @@ export default function Usuarios() {
         await api(`/seguridad/usuarios/${editando.id}`, { metodo: "PATCH", cuerpo: cambios });
         if (editando.id === sesion?.usuario.id) await recargar();
       }
+      avisar(editando === "nuevo" ? `Usuario ${form.email} creado.` : `Cambios de ${form.nombre} guardados.`);
       setEditando(null);
       await cargar();
     } catch (err) {
@@ -210,9 +213,9 @@ export default function Usuarios() {
               Cancelar
             </button>
             {puedeGuardar && (
-              <button className="boton boton-primario" disabled={guardando}>
-                {guardando ? "Guardando…" : nuevo ? "Crear usuario" : "Guardar cambios"}
-              </button>
+              <BotonAccion ocupado={guardando} textoOcupado={nuevo ? "Creando…" : "Guardando…"}>
+                {nuevo ? "Crear usuario" : "Guardar cambios"}
+              </BotonAccion>
             )}
           </div>
         </form>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, NOMBRE_TIPO, type Modulo, type Permiso, type Rol, type TipoRol } from "../api";
-import { Encabezado, Estado, MensajeError, Panel } from "../componentes";
+import { BotonAccion, Encabezado, Estado, MensajeError, Panel } from "../componentes";
+import { useAvisos } from "../avisos";
 import { useSesion } from "../sesion";
 
 type Formulario = {
@@ -47,6 +48,7 @@ export default function Roles() {
   const [codigoTocado, setCodigoTocado] = useState(false);
   const [errorForm, setErrorForm] = useState<unknown>(null);
   const [guardando, setGuardando] = useState(false);
+  const { avisar } = useAvisos();
 
   const cargar = useCallback(async () => {
     try {
@@ -137,6 +139,13 @@ export default function Roles() {
           cuerpo: { nombre: form.nombre, tipo: form.tipo, descripcion, activo: form.activo, permisos: form.permisos },
         });
       }
+      avisar(
+        modo.tipo === "editar"
+          ? `Rol ${form.codigo} guardado.`
+          : modo.tipo === "duplicar"
+            ? `Copia ${form.codigo} creada.`
+            : `Rol ${form.codigo} creado.`,
+      );
       setModo(null);
       await cargar();
     } catch (err) {
@@ -367,15 +376,9 @@ export default function Roles() {
                 Cancelar
               </button>
               {(modo?.tipo === "editar" ? puede("seguridad.rol.editar") : puede("seguridad.rol.crear")) && (
-                <button className="boton boton-primario" disabled={guardando}>
-                  {guardando
-                    ? "Guardando…"
-                    : modo?.tipo === "duplicar"
-                      ? "Crear copia"
-                      : modo?.tipo === "nuevo"
-                        ? "Crear rol"
-                        : "Guardar cambios"}
-                </button>
+                <BotonAccion ocupado={guardando} textoOcupado={modo?.tipo === "editar" ? "Guardando…" : "Creando…"}>
+                  {modo?.tipo === "duplicar" ? "Crear copia" : modo?.tipo === "nuevo" ? "Crear rol" : "Guardar cambios"}
+                </BotonAccion>
               )}
             </div>
           </form>

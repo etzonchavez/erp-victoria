@@ -400,7 +400,7 @@ TIPOS_IMAGEN = {
     b"\x89PNG\r\n\x1a\n": "image/png",
     b"\xff\xd8\xff": "image/jpeg",
 }
-TAMANO_MAXIMO_LOGO = 500 * 1024
+TAMANO_MAXIMO_LOGO = 2 * 1024 * 1024  # 2 MB: permite logos nítidos (≥ 600 px de ancho)
 
 
 def tipo_de_imagen(datos: bytes) -> str | None:
@@ -440,7 +440,7 @@ def cambiar_nombre_empresa(db: Session, actor: Usuario, nombre: str | None) -> P
 
 def cambiar_logo(db: Session, actor: Usuario, datos: bytes) -> Personalizacion:
     if len(datos) > TAMANO_MAXIMO_LOGO:
-        raise ErrorERP(413, "logo_muy_grande", "El logo no puede superar 500 KB")
+        raise ErrorERP(413, "logo_muy_grande", "El logo no puede superar 2 MB")
     tipo = tipo_de_imagen(datos)
     if not tipo:
         raise ErrorERP(415, "logo_formato", "El logo debe ser una imagen PNG, JPG o WebP")

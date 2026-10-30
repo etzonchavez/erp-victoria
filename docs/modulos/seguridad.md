@@ -1,6 +1,6 @@
 # Seguridad
 
-**Versión:** 0.4.0 · **Estado:** disponible
+**Versión:** 0.5.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -72,6 +72,18 @@ Permisos del módulo:
 3. El administrador **asigna roles estándar** o, si necesita variantes, los **duplica** y ajusta sus permisos.
 4. El administrador **crea los usuarios** y les asigna uno o más roles.
 5. Cada usuario **ingresa** con su correo y contraseña y solo ve en el menú las pantallas que sus permisos permiten.
+
+### Organización del menú
+
+- **Arriba:** los módulos de negocio (Solicitudes, Compras, Inventarios…). Es lo que el usuario usa a diario.
+- **Al pie, plegado:** el grupo **⚙ Administración**, con Usuarios, Roles, Módulos, Personalización y Auditoría. Se abre con un clic, recuerda si lo dejaste abierto y se abre solo cuando entras a una de sus pantallas.
+- Un usuario sin permisos de administración no ve el grupo.
+
+### Confirmación de cada acción
+
+- Mientras se guarda, el botón muestra un indicador giratorio y el texto *Guardando…*.
+- Al terminar, aparece una notificación abajo a la derecha (por ejemplo *Usuario creado*) y, en formularios que no se cierran, el botón muestra *✓ Guardado* por unos segundos y vuelve a su estado normal.
+- Un botón gris significa que la acción **no está permitida**, nunca que algo sigue procesando.
 6. Toda acción queda registrada en la **auditoría**.
 
 ## 4. Pantallas y campos
@@ -114,10 +126,13 @@ Lista de módulos con un interruptor para activarlos o desactivarlos. Seguridad 
 
 | Campo | Regla |
 | --- | --- |
-| Logo | PNG, JPG o WebP de hasta 500 KB; el formato se verifica por el contenido del archivo. No se acepta SVG porque puede contener código |
+| Logo | PNG, JPG o WebP de hasta 2 MB; el formato se verifica por el contenido del archivo. No se acepta SVG porque puede contener código. Se recomienda al menos 600 px de ancho: si la imagen es más pequeña se acepta, pero la pantalla avisa que podría verse borrosa |
 | Nombre de la empresa | Opcional, hasta 150 caracteres |
 
 El logo y el nombre aparecen en la pantalla de ingreso (antes de iniciar sesión) y en el menú lateral.
+
+!!! tip "Para un logo nítido"
+    Usa un PNG horizontal con fondo transparente de 600 a 1200 px de ancho. En el menú el logo se muestra en unos 200 px; una imagen más grande se ve nítida también en pantallas de alta resolución.
 
 ### Auditoría
 

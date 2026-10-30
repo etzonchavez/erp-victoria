@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Modulo } from "../api";
 import { Encabezado, Estado, Interruptor, MensajeError } from "../componentes";
 import { useSesion } from "../sesion";
+import { useAvisos } from "../avisos";
 
 export default function Modulos() {
   const { puede, recargar } = useSesion();
   const [modulos, setModulos] = useState<Modulo[]>([]);
   const [error, setError] = useState<unknown>(null);
   const [cambiando, setCambiando] = useState<string | null>(null);
+  const { avisar } = useAvisos();
 
   const cargar = useCallback(async () => {
     try {
@@ -27,6 +29,7 @@ export default function Modulos() {
     try {
       await api(`/seguridad/modulos/${m.codigo}`, { metodo: "PATCH", cuerpo: { activo } });
       await Promise.all([cargar(), recargar()]);
+      avisar(`Módulo ${m.nombre} ${activo ? "activado" : "desactivado"}.`);
     } catch (e) {
       setError(e);
     } finally {
@@ -52,7 +55,8 @@ export default function Modulos() {
             <Interruptor
               etiqueta={`${m.activo ? "Desactivar" : "Activar"} ${m.nombre}`}
               activo={m.activo}
-              deshabilitado={m.obligatorio || !puede("seguridad.modulo.editar") || cambiando === m.codigo}
+              deshabilitado={m.obligatorio || !puede("seguridad.modulo.editar")}
+              ocupado={cambiando === m.codigo}
               onCambio={(v) => cambiar(m, v)}
             />
           </li>

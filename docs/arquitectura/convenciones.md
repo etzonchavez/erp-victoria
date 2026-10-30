@@ -28,6 +28,13 @@ Prefijos de tablas: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` co
 - Errores con formato único: `{"codigo": "...", "mensaje": "..."}`.
 - Toda ruta declara el permiso que exige.
 
+## Pantallas (frontend)
+
+- **Menú:** cada módulo se registra en `MENU` de `frontend/src/App.tsx` con `grupo: "negocio"` (módulos de operación, arriba) o `grupo: "administracion"` (configuración, plegado al pie).
+- **Botones que guardan:** usar `BotonAccion` de `componentes.tsx` con `ocupado` mientras se ejecuta; nunca un `<button disabled>` para indicar que algo está en proceso.
+- **Confirmación:** tras toda acción exitosa llamar `avisar("…")` de `useAvisos()`; en formularios que no se cierran, además `useConfirmacion()` para mostrar *✓ Guardado* en el botón.
+- **Gris = no permitido:** el estado deshabilitado se reserva para acciones sin permiso o no aplicables.
+
 ## Git
 
 - Rama principal `main`; trabajo en ramas `semana-N/tarea`.

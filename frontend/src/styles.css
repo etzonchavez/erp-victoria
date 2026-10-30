@@ -217,3 +217,58 @@ th.numero, td.numero:not(:first-child) { text-align: right; }
 .logo-vista p { background: #fff; padding: 4px 8px; }
 .acciones-linea { display: flex; gap: 12px; flex-wrap: wrap; }
 .aviso-exito { background: var(--sello-claro); color: #0b5a4f; }
+
+/* ---------- menú: negocio arriba, administración plegada al pie ---------- */
+.riel { overflow-y: auto; }
+.riel-negocio { display: grid; gap: 24px; }
+.riel-ayuda { font-size: 13px; color: #96a3c2; padding: 0 12px; }
+.riel-ayuda a { color: #8fd3c7; padding: 0; text-decoration: underline; }
+.riel-ayuda a:hover { background: none; }
+.riel-admin { margin-top: auto; border-top: 1px solid var(--tinta-suave); padding-top: 12px; display: grid; gap: 4px; }
+.riel-admin + .riel-usuario { margin-top: 0; }
+.riel-admin-boton {
+  font: inherit; font-size: 14px; color: #c9d1e4;
+  background: none; border: 0; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: var(--radio); text-align: left;
+}
+.riel-admin-boton:hover, .riel-admin-boton.activo { background: var(--tinta-suave); color: #fff; }
+.riel-admin-flecha { margin-left: auto; font-size: 11px; transition: transform 0.15s; }
+.riel-admin-boton[aria-expanded="true"] .riel-admin-flecha { transform: rotate(90deg); }
+.riel-admin-lista a { padding-left: 36px; font-size: 14px; }
+
+/* ---------- logo nítido en el menú ---------- */
+.riel-logo { padding: 12px; min-height: 64px; }
+.riel-logo img { max-height: 56px; width: auto; height: auto; image-rendering: auto; }
+
+/* ---------- botones con estado ---------- */
+.boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s, border-color 0.15s; }
+.boton-ocupado, .boton-ocupado:disabled { opacity: 1; cursor: progress; }
+.boton-listo, .boton-listo:hover { background: var(--sello-claro); border-color: var(--sello); color: #0b5a4f; }
+.giro {
+  width: 14px; height: 14px; flex: none;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: gira 0.7s linear infinite;
+}
+@keyframes gira { to { transform: rotate(360deg); } }
+.interruptor-ocupado, .interruptor-ocupado:disabled { opacity: 1; cursor: progress; animation: pulso 0.9s ease-in-out infinite alternate; }
+@keyframes pulso { to { filter: brightness(1.15); } }
+
+/* ---------- notificaciones de confirmación ---------- */
+.notificaciones { position: fixed; right: 24px; bottom: 24px; display: grid; gap: 8px; z-index: 20; pointer-events: none; }
+.notificacion {
+  background: var(--tinta); color: #fff; font-size: 14px;
+  padding: 12px 16px; border-radius: var(--radio);
+  box-shadow: 0 6px 20px rgba(30, 42, 74, 0.25);
+  animation: sube 0.18s ease-out;
+}
+.notificacion span { color: #8fd3c7; font-weight: 700; margin-right: 4px; }
+@keyframes sube { from { transform: translateY(8px); opacity: 0; } }
+.aviso-advertencia { background: #fff4e0; color: #7a4b00; margin-bottom: 0; }
+
+@media (max-width: 820px) {
+  .notificaciones { left: 16px; right: 16px; bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .giro, .interruptor-ocupado, .notificacion, .riel-admin-flecha { animation: none; transition: none; }
+}

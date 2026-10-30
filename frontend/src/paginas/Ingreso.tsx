@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { NOMBRE_PRODUCTO } from "../api";
-import { MensajeError } from "../componentes";
+import { BotonAccion, MensajeError } from "../componentes";
 import { useSesion } from "../sesion";
 
 export default function Ingreso() {
@@ -52,9 +52,9 @@ export default function Ingreso() {
             />
           </label>
           <MensajeError error={error} />
-          <button className="boton boton-primario" disabled={enviando || !email || !password}>
-            {enviando ? "Ingresando…" : "Ingresar"}
-          </button>
+          <BotonAccion ocupado={enviando} textoOcupado="Ingresando…">
+            Ingresar
+          </BotonAccion>
         </form>
       </section>
     </main>

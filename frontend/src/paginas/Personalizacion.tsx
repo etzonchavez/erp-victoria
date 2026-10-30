@@ -1,45 +1,84 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, NOMBRE_PRODUCTO, type Marca } from "../api";
-import { Encabezado, MensajeError } from "../componentes";
+import { BotonAccion, Encabezado, MensajeError, useConfirmacion } from "../componentes";
+import { useAvisos } from "../avisos";
 import { useSesion } from "../sesion";
 
 const FORMATOS = ["image/png", "image/jpeg", "image/webp"];
-const MAXIMO = 500 * 1024;
+const MAXIMO_MB = 2;
+const MAXIMO = MAXIMO_MB * 1024 * 1024;
+/** Ancho mínimo recomendado para que el logo se vea nítido en pantallas de alta densidad. */
+export const ANCHO_RECOMENDADO = 600;
+
+const anchoDeImagen = (archivo: File) =>
+  new Promise<number | null>((resolver) => {
+    const url = URL.createObjectURL(archivo);
+    const img = new Image();
+    img.onload = () => {
+      resolver(img.naturalWidth);
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      resolver(null);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
 
 export default function Personalizacion() {
   const { marca, recargarMarca } = useSesion();
   const [nombre, setNombre] = useState(marca.nombre_empresa ?? "");
   const [error, setError] = useState<unknown>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
-  const [trabajando, setTrabajando] = useState(false);
+  const [advertencia, setAdvertencia] = useState<string | null>(null);
+  const [trabajando, setTrabajando] = useState<"logo" | "quitar" | "nombre" | null>(null);
   const entrada = useRef<HTMLInputElement>(null);
+  const { avisar } = useAvisos();
+  const nombreGuardado = useConfirmacion();
+  const [textoListo, setTextoListo] = useState("Guardado");
 
   useEffect(() => setNombre(marca.nombre_empresa ?? ""), [marca.nombre_empresa]);
 
-  const ejecutar = async (accion: () => Promise<unknown>, exito: string) => {
+  const ejecutar = async (
+    que: "logo" | "quitar" | "nombre",
+    accion: () => Promise<unknown>,
+    exito: string,
+  ): Promise<boolean> => {
     setError(null);
-    setAviso(null);
-    setTrabajando(true);
+    setTrabajando(que);
     try {
       await accion();
       await recargarMarca();
-      setAviso(exito);
+      avisar(exito);
+      return true;
     } catch (e) {
       setError(e);
+      return false;
     } finally {
-      setTrabajando(false);
+      setTrabajando(null);
     }
   };
 
-  const guardarNombre = (e: FormEvent) => {
+  const sinCambios = nombre.trim() === (marca.nombre_empresa ?? "");
+
+  const guardarNombre = async (e: FormEvent) => {
     e.preventDefault();
-    ejecutar(
-      () => api<Marca>("/seguridad/personalizacion", { metodo: "PUT", cuerpo: { nombre_empresa: nombre } }),
+    if (sinCambios) {
+      setTextoListo("Sin cambios por guardar");
+      nombreGuardado.confirmar();
+      return;
+    }
+    const ok = await ejecutar(
+      "nombre",
+      () => api<Marca>("/seguridad/personalizacion", { metodo: "PUT", cuerpo: { nombre_empresa: nombre.trim() } }),
       "Nombre de la empresa guardado.",
     );
+    if (ok) {
+      setTextoListo("Guardado");
+      nombreGuardado.confirmar();
+    }
   };
 
-  const elegirLogo = (e: ChangeEvent<HTMLInputElement>) => {
+  const elegirLogo = async (e: ChangeEvent<HTMLInputElement>) => {
     const archivo = e.target.files?.[0];
     e.target.value = "";
     if (!archivo) return;
@@ -48,17 +87,27 @@ export default function Personalizacion() {
       return;
     }
     if (archivo.size > MAXIMO) {
-      setError(new Error(`El logo pesa ${Math.round(archivo.size / 1024)} KB; el máximo es 500 KB.`));
+      const mb = (archivo.size / 1024 / 1024).toFixed(1);
+      setError(new Error(`El logo pesa ${mb} MB; el máximo es ${MAXIMO_MB} MB.`));
       return;
     }
+    const ancho = await anchoDeImagen(archivo);
+    setAdvertencia(
+      ancho !== null && ancho < ANCHO_RECOMENDADO
+        ? `Tu logo mide ${ancho} px de ancho y podría verse borroso. Para que se vea nítido usa una imagen de al menos ${ANCHO_RECOMENDADO} px de ancho.`
+        : null,
+    );
     ejecutar(
+      "logo",
       () => api<Marca>("/seguridad/personalizacion/logo", { metodo: "PUT", archivo: { campo: "archivo", valor: archivo } }),
       "Logo actualizado. Ya aparece en el ingreso y en el menú.",
     );
   };
 
   const quitarLogo = () =>
-    ejecutar(() => api<Marca>("/seguridad/personalizacion/logo", { metodo: "DELETE" }), "Logo quitado.");
+    ejecutar("quitar", () => api<Marca>("/seguridad/personalizacion/logo", { metodo: "DELETE" }), "Logo quitado.").then(
+      (ok) => ok && setAdvertencia(null),
+    );
 
   return (
     <>
@@ -67,11 +116,6 @@ export default function Personalizacion() {
         descripcion={`El logo y el nombre de tu empresa aparecen en la pantalla de ingreso y en el menú de ${NOMBRE_PRODUCTO}.`}
       />
       <MensajeError error={error} />
-      {aviso && (
-        <div className="aviso aviso-exito" role="status">
-          {aviso}
-        </div>
-      )}
 
       <div className="personalizacion">
         <section className="bloque">
@@ -83,16 +127,37 @@ export default function Personalizacion() {
               <p className="tenue">Sin logo. Se mostrará solo el nombre {NOMBRE_PRODUCTO}.</p>
             )}
           </div>
-          <p className="tenue">PNG, JPG o WebP de hasta 500 KB. Se ve mejor horizontal y con fondo transparente.</p>
+          {advertencia && (
+            <div className="aviso aviso-advertencia" role="alert">
+              {advertencia}
+            </div>
+          )}
+          <p className="tenue">
+            PNG, JPG o WebP de hasta {MAXIMO_MB} MB. Recomendado: horizontal, con fondo transparente y de al menos{" "}
+            {ANCHO_RECOMENDADO} px de ancho.
+          </p>
           <input ref={entrada} type="file" accept={FORMATOS.join(",")} onChange={elegirLogo} hidden />
           <div className="acciones-linea">
-            <button className="boton boton-primario" disabled={trabajando} onClick={() => entrada.current?.click()}>
+            <BotonAccion
+              type="button"
+              ocupado={trabajando === "logo"}
+              textoOcupado="Subiendo logo…"
+              disabled={trabajando === "quitar"}
+              onClick={() => entrada.current?.click()}
+            >
               {marca.logo_url ? "Cambiar logo" : "Subir logo"}
-            </button>
+            </BotonAccion>
             {marca.logo_url && (
-              <button className="boton" disabled={trabajando} onClick={quitarLogo}>
+              <BotonAccion
+                type="button"
+                primario={false}
+                ocupado={trabajando === "quitar"}
+                textoOcupado="Quitando…"
+                disabled={trabajando === "logo"}
+                onClick={quitarLogo}
+              >
                 Quitar logo
-              </button>
+              </BotonAccion>
             )}
           </div>
         </section>
@@ -102,12 +167,20 @@ export default function Personalizacion() {
           <form className="formulario" onSubmit={guardarNombre}>
             <label>
               Nombre que verán tus usuarios
-              <input value={nombre} maxLength={150} placeholder="Por ejemplo: Distribuidora Andina S.A.C." onChange={(e) => setNombre(e.target.value)} />
+              <input value={nombre} maxLength={150} placeholder="Por ejemplo: Distribuidora Andina S.A.C." onChange={(e) => {
+                  setNombre(e.target.value);
+                  nombreGuardado.reiniciar();
+                }}
+              />
             </label>
             <div className="acciones-linea">
-              <button className="boton boton-primario" disabled={trabajando || nombre === (marca.nombre_empresa ?? "")}>
+              <BotonAccion
+                ocupado={trabajando === "nombre"}
+                listo={nombreGuardado.listo}
+                textoListo={textoListo}
+              >
                 Guardar nombre
-              </button>
+              </BotonAccion>
             </div>
           </form>
         </section>

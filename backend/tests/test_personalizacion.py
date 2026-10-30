@@ -40,9 +40,16 @@ def test_svg_y_otros_formatos_son_rechazados(client, admin):
     assert r.json()["codigo"] == "logo_formato"
 
 
-def test_logo_de_mas_de_500_kb_es_rechazado(client, admin):
-    r = subir(client, admin, PNG + b"\x00" * (500 * 1024))
+def test_logo_de_hasta_2_mb_es_aceptado(client, admin):
+    r = subir(client, admin, PNG + b"\x00" * (1536 * 1024))
+    assert r.status_code == 200, r.text
+
+
+def test_logo_de_mas_de_2_mb_es_rechazado(client, admin):
+    r = subir(client, admin, PNG + b"\x00" * (2 * 1024 * 1024))
     assert r.status_code == 413
+    assert r.json()["codigo"] == "logo_muy_grande"
+    assert "2 MB" in r.json()["mensaje"]
 
 
 def test_quitar_logo(client, admin):

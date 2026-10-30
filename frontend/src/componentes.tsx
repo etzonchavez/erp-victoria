@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { ErrorApi } from "./api";
 
 export function Panel({
@@ -84,11 +84,13 @@ export function Interruptor({
   activo,
   onCambio,
   deshabilitado,
+  ocupado,
   etiqueta,
 }: {
   activo: boolean;
   onCambio: (v: boolean) => void;
   deshabilitado?: boolean;
+  ocupado?: boolean;
   etiqueta: string;
 }) {
   return (
@@ -97,8 +99,9 @@ export function Interruptor({
       role="switch"
       aria-checked={activo}
       aria-label={etiqueta}
-      className="interruptor"
-      disabled={deshabilitado}
+      className={ocupado ? "interruptor interruptor-ocupado" : "interruptor"}
+      disabled={deshabilitado || ocupado}
+      aria-busy={ocupado || undefined}
       onClick={() => onCambio(!activo)}
     >
       <span />
@@ -110,3 +113,60 @@ export const fecha = (iso: string | null) =>
   iso
     ? new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso))
     : "Nunca";
+
+/**
+ * Botón de acción con estados claros, para usar en todas las pantallas:
+ * - ocupado: muestra un indicador giratorio y el texto en curso ("Guardando…").
+ * - listo: tras guardar muestra "✓ Guardado" unos segundos y vuelve a su estado normal.
+ * Nunca queda gris sin explicación: el gris (deshabilitado) se reserva para
+ * cuando la acción no está permitida.
+ */
+export function BotonAccion({
+  ocupado = false,
+  textoOcupado = "Guardando…",
+  listo = false,
+  textoListo = "Guardado",
+  primario = true,
+  className,
+  children,
+  disabled,
+  ...resto
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  ocupado?: boolean;
+  textoOcupado?: string;
+  listo?: boolean;
+  textoListo?: string;
+  primario?: boolean;
+}) {
+  const clases = ["boton", primario && "boton-primario", ocupado && "boton-ocupado", listo && !ocupado && "boton-listo", className]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <button {...resto} className={clases} disabled={disabled || ocupado} aria-busy={ocupado || undefined}>
+      {ocupado ? (
+        <>
+          <span className="giro" aria-hidden="true" /> {textoOcupado}
+        </>
+      ) : listo ? (
+        <>
+          <span aria-hidden="true">✓</span> {textoListo}
+        </>
+      ) : (
+        children
+      )}
+    </button>
+  );
+}
+
+/** Marca "listo" durante unos segundos después de una acción exitosa. */
+export function useConfirmacion(duracion = 2500) {
+  const [listo, setListo] = useState(false);
+  const temporizador = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(temporizador.current), []);
+  const confirmar = () => {
+    setListo(true);
+    window.clearTimeout(temporizador.current);
+    temporizador.current = window.setTimeout(() => setListo(false), duracion);
+  };
+  return { listo, confirmar, reiniciar: () => setListo(false) };
+}
