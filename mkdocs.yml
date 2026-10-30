@@ -29,7 +29,12 @@ nav:
       - ADR-001 Stack tecnológico: adr/0001-stack.md
       - ADR-002 Arquitectura: adr/0002-arquitectura.md
       - ADR-003 Infraestructura a costo cero: adr/0003-infraestructura.md
+      - ADR-004 Base contable configurable: adr/0004-base-contable.md
   - Módulos:
       - Índice: modulos/index.md
       - Seguridad: modulos/seguridad.md
-  - Países: paises/index.md
+      - Maestros: modulos/maestros.md
+      - Contabilidad base: modulos/contabilidad.md
+  - Países:
+      - Índice: paises/index.md
+      - Perú: paises/peru.md

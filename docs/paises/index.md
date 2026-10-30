@@ -2,7 +2,7 @@
 
 | País | Código | Moneda | Estado |
 | --- | --- | --- | --- |
-| Perú | `pe` | PEN | 2027 |
+| Perú | `pe` | PEN | [Plantilla contable](peru.md) en 2026 · localización fiscal en 2027 |
 | Colombia | `co` | COP | 2028 |
 | Panamá | `pa` | PAB / USD | 2028 |
 | El Salvador | `sv` | USD | 2029 |
