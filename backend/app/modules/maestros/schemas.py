@@ -382,3 +382,14 @@ class ArticuloCambio(BaseModel):
 
 class CodigoSugerido(BaseModel):
     codigo: str
+
+
+# Acceso por empresa y unidad de negocio
+class AccesoEmpresaItem(BaseModel):
+    empresa_id: uuid.UUID
+    todas_unidades: bool = True
+    unidades: list[uuid.UUID] = Field(default_factory=list)
+
+
+class AccesosCambio(BaseModel):
+    accesos: list[AccesoEmpresaItem]

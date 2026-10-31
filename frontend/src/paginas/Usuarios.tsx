@@ -3,6 +3,7 @@ import { api, NOMBRE_TIPO, type Rol, type Usuario } from "../api";
 import { BotonAccion, Encabezado, Estado, MensajeError, Panel, fecha } from "../componentes";
 import { useAvisos } from "../avisos";
 import { useSesion } from "../sesion";
+import { AccesosUsuario } from "../accesos";
 
 type Formulario = {
   email: string;
@@ -24,11 +25,15 @@ export default function Usuarios() {
   const [form, setForm] = useState<Formulario>(VACIO);
   const [errorForm, setErrorForm] = useState<unknown>(null);
   const [guardando, setGuardando] = useState(false);
+  const [empresasPorUsuario, setEmpresasPorUsuario] = useState<Record<string, number> | null>(null);
   const { avisar } = useAvisos();
 
   const cargar = useCallback(async () => {
     try {
       setUsuarios(await api<Usuario[]>("/seguridad/usuarios"));
+      api<Record<string, number>>("/maestros/accesos/resumen")
+        .then(setEmpresasPorUsuario)
+        .catch(() => setEmpresasPorUsuario(null));
       if (puede("seguridad.rol.ver")) setRoles(await api<Rol[]>("/seguridad/roles"));
     } catch (e) {
       setError(e);
@@ -124,6 +129,9 @@ export default function Usuarios() {
                     </span>
                   ))}
                   {!u.es_administrador && u.roles.length === 0 && <span className="tenue">Sin roles</span>}
+                  {!u.es_administrador && empresasPorUsuario && !empresasPorUsuario[u.id] && (
+                    <span className="etiqueta etiqueta-alerta">Sin empresas</span>
+                  )}
                 </td>
                 <td className="numero">{fecha(u.ultimo_acceso)}</td>
                 <td>
@@ -219,6 +227,9 @@ export default function Usuarios() {
             )}
           </div>
         </form>
+        {editando && editando !== "nuevo" && (
+          <AccesosUsuario usuario={editando} editar={puede("seguridad.usuario.editar")} onCambio={cargar} />
+        )}
       </Panel>
     </>
   );

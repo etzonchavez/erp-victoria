@@ -192,7 +192,7 @@ def test_maestros_ordena_el_arbol_pero_no_asigna_perfiles(client, h, empresa):
 
 
 def test_contador_asigna_perfiles_pero_no_crea_categorias(client, h, empresa):
-    u = usuario_con_rol(client, h, "ERP_CNT_ADMINISTRADOR")
+    u = usuario_con_rol(client, h, "ERP_CNT_ADMINISTRADOR", [empresa])
     assert crear(client, u, "XYZ", "No permitido").status_code == 403
     c = categorias(client, h)
     r = client.put(

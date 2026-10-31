@@ -251,3 +251,30 @@ class UnidadArticulo(ConAuditoria, Base):
     articulo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_articulo.id"), index=True)
     unidad: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
     factor: Mapped[Decimal] = mapped_column(Numeric(18, 6))
+
+
+class AccesoEmpresa(ConAuditoria, Base):
+    """Empresa a la que un usuario tiene acceso. Sin filas, el usuario no ve ninguna empresa
+    (salvo el administrador, que ve todas)."""
+
+    __tablename__ = "mae_acceso_empresa"
+    __table_args__ = (UniqueConstraint("usuario_id", "empresa_id"),)
+
+    usuario_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("seg_usuario.id", ondelete="CASCADE"), index=True
+    )
+    empresa_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_empresa.id"))
+    # True: todas las unidades de negocio de la empresa, incluidas las que se creen después
+    todas_unidades: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class AccesoUnidad(ConAuditoria, Base):
+    """Unidad de negocio permitida cuando el acceso a la empresa no es a todas."""
+
+    __tablename__ = "mae_acceso_unidad"
+    __table_args__ = (UniqueConstraint("usuario_id", "unidad_negocio_id"),)
+
+    usuario_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("seg_usuario.id", ondelete="CASCADE"), index=True
+    )
+    unidad_negocio_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_unidad_negocio.id"))

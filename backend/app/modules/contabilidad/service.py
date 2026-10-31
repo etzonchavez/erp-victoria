@@ -984,3 +984,17 @@ def asignar_perfil_articulo(
 
 def codigos_impuesto(db: Session) -> list[str]:
     return sorted(set(db.scalars(select(Impuesto.codigo).where(Impuesto.activo.is_(True)))))
+
+
+def obtener_centro(db: Session, centro_id: uuid.UUID) -> CentroCosto:
+    cc = db.get(CentroCosto, centro_id)
+    if not cc:
+        raise no_encontrado("El centro de costo")
+    return cc
+
+
+def obtener_impuesto(db: Session, impuesto_id: uuid.UUID) -> Impuesto:
+    imp = db.get(Impuesto, impuesto_id)
+    if not imp:
+        raise no_encontrado("El impuesto")
+    return imp

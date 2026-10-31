@@ -257,7 +257,7 @@ def test_impuesto_con_tasa_necesita_cuenta_de_pasivo_o_activo(client, h, empresa
 
 
 def test_analista_contable_solo_edita_centros_de_costo(client, h, empresa):
-    u = usuario_con_rol(client, h, "ERP_CNT_CONFIGURADOR")
+    u = usuario_con_rol(client, h, "ERP_CNT_CONFIGURADOR", [empresa])
     assert client.get(f"{API}/empresas/{empresa['id']}/cuentas", headers=u).status_code == 200
     assert crear_cuenta(client, u, empresa, "70", "Ventas").status_code == 403
     r = client.post(
@@ -280,7 +280,7 @@ def test_contabilidad_inactiva_bloquea_su_api(client, admin):
 
 
 def test_selector_de_empresas_accesibles(client, h, empresa):
-    u = usuario_con_rol(client, h, "ERP_CNT_CONSULTA")
+    u = usuario_con_rol(client, h, "ERP_CNT_CONSULTA", [empresa])
     r = client.get("/api/v1/maestros/empresas/accesibles", headers=u)
     assert r.status_code == 200
     assert [e["identificacion_fiscal"] for e in r.json()] == [RUC_BCP]

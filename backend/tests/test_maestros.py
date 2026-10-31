@@ -21,15 +21,16 @@ def activo(client, admin):
     return admin
 
 
-def crear_empresa(client, h, ruc=RUC_BCP, **extra):
+def crear_empresa(client, h, ruc=RUC_BCP, razon_social="ACME S.A.C.", **extra):
     return client.post(
         f"{API}/empresas",
         headers=h,
-        json={"identificacion_fiscal": ruc, "razon_social": "ACME S.A.C.", **extra},
+        json={"identificacion_fiscal": ruc, "razon_social": razon_social, **extra},
     )
 
 
-def usuario_con_rol(client, admin, rol: str) -> dict:
+def usuario_con_rol(client, admin, rol: str, empresas: list[dict] | None = None) -> dict:
+    """Crea un usuario con un rol estándar y, si se indican, acceso a esas empresas."""
     roles = {r["codigo"]: r["id"] for r in client.get(f"{API_SEG}/roles", headers=admin).json()}
     email = f"{rol.lower()}@empresa.pe"
     r = client.post(
@@ -38,6 +39,13 @@ def usuario_con_rol(client, admin, rol: str) -> dict:
         json={"email": email, "nombre": "Usuario", "password": "Clave1234", "roles": [roles[rol]]},
     )
     assert r.status_code == 201, r.text
+    if empresas:
+        r = client.put(
+            f"{API}/usuarios/{r.json()['id']}/accesos",
+            headers=admin,
+            json={"accesos": [{"empresa_id": e["id"]} for e in empresas]},
+        )
+        assert r.status_code == 200, r.text
     return login(client, email, "Clave1234")
 
 

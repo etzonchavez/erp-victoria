@@ -13,6 +13,8 @@ from app.core.eventos import emitir
 from app.localizacion import PAISES, TIPO_EXTRANJERO, pais
 from app.modules.maestros import datos_base
 from app.modules.maestros.models import (
+    AccesoEmpresa,
+    AccesoUnidad,
     Articulo,
     BloqueoProveedor,
     Categoria,
@@ -161,6 +163,7 @@ def crear_empresa(db: Session, actor: Usuario, datos: dict) -> Empresa:
     db.add(principal)
     db.flush()
     db.refresh(empresa)
+    dar_acceso_al_creador(db, actor, empresa)
     # Otros módulos preparan sus datos (ej. contabilidad carga el plan de cuentas del país).
     emitir("empresa_creada", db, actor, empresa)
     auditar(
@@ -1477,3 +1480,167 @@ def convertir_a_unidad_base(
     if propia:
         return cantidad * propia.factor
     return convertir(db, cantidad, unidad, articulo.unidad)
+
+
+# ---------------------------------------------------------------- acceso por empresa y unidad
+
+
+def accesos(db: Session, usuario: Usuario) -> dict[uuid.UUID, set[uuid.UUID] | None] | None:
+    """Empresas permitidas y, por cada una, sus unidades (None = todas).
+
+    Devuelve None para el administrador: tiene acceso a todo.
+    """
+    if usuario.es_administrador:
+        return None
+    resultado: dict[uuid.UUID, set[uuid.UUID] | None] = {}
+    for a in db.scalars(select(AccesoEmpresa).where(AccesoEmpresa.usuario_id == usuario.id)):
+        resultado[a.empresa_id] = None if a.todas_unidades else set()
+    for u in db.scalars(select(AccesoUnidad).where(AccesoUnidad.usuario_id == usuario.id)):
+        un = db.get(UnidadNegocio, u.unidad_negocio_id)
+        if un and resultado.get(un.empresa_id) is not None:
+            resultado[un.empresa_id].add(un.id)
+    return resultado
+
+
+def empresas_permitidas(db: Session, usuario: Usuario, solo_activas: bool = False) -> list[Empresa]:
+    permitidos = accesos(db, usuario)
+    empresas = listar_empresas(db, solo_activas)
+    return empresas if permitidos is None else [e for e in empresas if e.id in permitidos]
+
+
+def unidades_permitidas(db: Session, usuario: Usuario, empresa: Empresa) -> list[UnidadNegocio]:
+    permitidos = accesos(db, usuario)
+    if permitidos is None:
+        return list(empresa.unidades)
+    if empresa.id not in permitidos:
+        return []
+    ids = permitidos[empresa.id]
+    return list(empresa.unidades) if ids is None else [u for u in empresa.unidades if u.id in ids]
+
+
+def verificar_acceso_empresa(db: Session, usuario: Usuario, empresa_id: uuid.UUID) -> None:
+    permitidos = accesos(db, usuario)
+    if permitidos is not None and empresa_id not in permitidos:
+        raise ErrorERP(403, "sin_acceso_empresa", "No tienes acceso a esta empresa")
+
+
+def verificar_acceso_unidad(db: Session, usuario: Usuario, unidad_id: uuid.UUID) -> None:
+    """Para las solicitudes y órdenes: el usuario debe tener acceso a la unidad de negocio."""
+    un = obtener_unidad_negocio(db, unidad_id)
+    verificar_acceso_empresa(db, usuario, un.empresa_id)
+    permitidas = accesos(db, usuario)
+    if (
+        permitidas is not None
+        and permitidas[un.empresa_id] is not None
+        and un.id not in permitidas[un.empresa_id]
+    ):
+        raise ErrorERP(403, "sin_acceso_unidad", f"No tienes acceso a la unidad {un.nombre}")
+
+
+def accesos_de_usuario(db: Session, usuario_id: uuid.UUID) -> list[dict]:
+    filas = []
+    unidades = {
+        u.unidad_negocio_id
+        for u in db.scalars(select(AccesoUnidad).where(AccesoUnidad.usuario_id == usuario_id))
+    }
+    for a in db.scalars(select(AccesoEmpresa).where(AccesoEmpresa.usuario_id == usuario_id)):
+        empresa = db.get(Empresa, a.empresa_id)
+        filas.append(
+            {
+                "empresa_id": a.empresa_id,
+                "todas_unidades": a.todas_unidades,
+                "unidades": []
+                if a.todas_unidades
+                else [u.id for u in empresa.unidades if u.id in unidades],
+            }
+        )
+    return filas
+
+
+def resumen_accesos(db: Session) -> dict[uuid.UUID, int]:
+    """N.° de empresas asignadas por usuario (para avisar quién no tiene ninguna)."""
+    conteo: dict[uuid.UUID, int] = {}
+    for usuario_id in db.scalars(select(AccesoEmpresa.usuario_id)):
+        conteo[usuario_id] = conteo.get(usuario_id, 0) + 1
+    return conteo
+
+
+def fijar_accesos(db: Session, actor: Usuario, usuario: Usuario, items: list[dict]) -> list[dict]:
+    """Reemplaza los accesos del usuario: [{empresa_id, todas_unidades, unidades: [...]}]."""
+    nuevos_e, nuevos_u, detalle = [], [], []
+    vistas = set()
+    for item in items:
+        empresa = obtener_empresa(db, item["empresa_id"])
+        if empresa.id in vistas:
+            raise ErrorERP(422, "empresa_repetida", f"{empresa.razon_social} está repetida")
+        vistas.add(empresa.id)
+        todas = bool(item.get("todas_unidades", True))
+        ids = set(item.get("unidades") or [])
+        if not todas:
+            propias = {u.id for u in empresa.unidades}
+            if not ids:
+                raise ErrorERP(
+                    422,
+                    "unidades_requeridas",
+                    f"Elige al menos una unidad de negocio de {empresa.razon_social}",
+                )
+            if ids - propias:
+                raise ErrorERP(
+                    422, "unidad_otra_empresa", f"Hay unidades que no son de {empresa.razon_social}"
+                )
+            nuevos_u += [
+                AccesoUnidad(usuario_id=usuario.id, unidad_negocio_id=u, creado_por=actor.id)
+                for u in ids
+            ]
+        nuevos_e.append(
+            AccesoEmpresa(
+                usuario_id=usuario.id,
+                empresa_id=empresa.id,
+                todas_unidades=todas,
+                creado_por=actor.id,
+            )
+        )
+        nombres = sorted(u.codigo for u in empresa.unidades if u.id in ids)
+        detalle.append(f"{empresa.razon_social}: {'todas' if todas else ', '.join(nombres)}")
+    antes = [
+        f"{db.get(Empresa, a['empresa_id']).razon_social}: "
+        + (
+            "todas"
+            if a["todas_unidades"]
+            else ", ".join(
+                sorted(
+                    u.codigo
+                    for u in db.get(Empresa, a["empresa_id"]).unidades
+                    if u.id in a["unidades"]
+                )
+            )
+        )
+        for a in accesos_de_usuario(db, usuario.id)
+    ]
+    if sorted(antes) == sorted(detalle):
+        return accesos_de_usuario(db, usuario.id)
+    for tabla in (AccesoUnidad, AccesoEmpresa):
+        for fila in db.scalars(select(tabla).where(tabla.usuario_id == usuario.id)):
+            db.delete(fila)
+    db.flush()
+    db.add_all(nuevos_e + nuevos_u)
+    auditar(
+        db,
+        actor,
+        "asignar_accesos",
+        "usuario",
+        usuario.id,
+        {"usuario": usuario.email, "antes": sorted(antes), "despues": sorted(detalle)},
+    )
+    db.commit()
+    return accesos_de_usuario(db, usuario.id)
+
+
+def dar_acceso_al_creador(db: Session, usuario: Usuario, empresa: Empresa) -> None:
+    """Quien crea una empresa (sin ser administrador) obtiene acceso a ella."""
+    if not usuario.es_administrador and not db.scalar(
+        select(AccesoEmpresa.id).where(
+            AccesoEmpresa.usuario_id == usuario.id, AccesoEmpresa.empresa_id == empresa.id
+        )
+    ):
+        db.add(AccesoEmpresa(usuario_id=usuario.id, empresa_id=empresa.id, creado_por=usuario.id))

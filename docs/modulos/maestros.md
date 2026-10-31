@@ -177,19 +177,15 @@ Vienen precargadas: Contado, Crédito 15, 30, 45 y 60 días. Se pueden crear otr
 - No se puede eliminar una categoría con artículos ni con subcategorías; solo desactivarla.
 - Todo cambio queda en la auditoría.
 
-## 6. Pendiente
-
-- Restringir el acceso de cada usuario a determinadas empresas y unidades de negocio (hoy ve todas).
-
-## 7. Reportes
+## 6. Reportes
 
 - Artículos por categoría con su combinación contable (exportable a Excel).
 
-## 8. Configuración por país
+## 7. Configuración por país
 
 La plantilla contable, los impuestos y las unidades de medida precargadas vienen del paquete del país. Perú: [plantilla PCGE](../paises/peru.md).
 
-## 9. Preguntas frecuentes
+## 8. Preguntas frecuentes
 
 **¿El usuario de compras tiene que saber de cuentas contables?** No. Elige el artículo; la cuenta sale de la categoría.
 

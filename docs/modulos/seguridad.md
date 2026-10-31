@@ -134,6 +134,16 @@ El logo y el nombre aparecen en la pantalla de ingreso (antes de iniciar sesión
 !!! tip "Para un logo nítido"
     Usa un PNG horizontal con fondo transparente de 600 a 1200 px de ancho. En el menú el logo se muestra en unos 200 px; una imagen más grande se ve nítida también en pantallas de alta resolución.
 
+### Acceso por empresa y unidad de negocio
+
+En la ficha de cada usuario (*Administración → Usuarios*) se marcan las **empresas** a las que tiene acceso y, en cada una, **todas sus unidades de negocio** (incluidas las que se creen después) o solo algunas.
+
+- Un usuario **sin empresas asignadas no ve ninguna**: la lista de usuarios lo marca con *Sin empresas*.
+- El **administrador** ve todas las empresas, sin asignación.
+- Quien crea una empresa obtiene acceso a ella automáticamente.
+- El acceso se verifica en el servidor en toda pantalla y operación que trabaja sobre una empresa (plan de cuentas, perfiles, centros de costo, impuestos, empresas, bloqueo de proveedores) y en la configuración contable que se muestra en la ficha de un artículo. Las solicitudes y órdenes de compra también exigirán acceso a la unidad de negocio.
+- Asignar accesos requiere `seguridad.usuario.editar` y queda en la auditoría con lo anterior y lo nuevo.
+
 ### Atributos adicionales
 
 *Administración → Atributos adicionales* ([ADR-005](../adr/0005-atributos-adicionales.md)). Para cada documento operativo (solicitud de compra, orden de compra) y cada nivel (cabecera, línea, distribución) hay 10 atributos de texto, 10 numéricos y 10 de fecha, todos inactivos al inicio. La configuración es una sola para todo el grupo de empresas.

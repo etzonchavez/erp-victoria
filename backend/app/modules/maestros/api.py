@@ -9,7 +9,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.localizacion import PAISES
 from app.modules.maestros import datos_base, service
+from app.modules.maestros.deps import acceso_empresa_de_ruta
 from app.modules.maestros.schemas import (
+    AccesoEmpresaItem,
+    AccesosCambio,
     ArticuloCambio,
     ArticuloCrear,
     ArticuloResumen,
@@ -58,7 +61,8 @@ from app.modules.seguridad import service as seguridad
 from app.modules.seguridad.deps import requiere, usuario_actual
 from app.modules.seguridad.models import Usuario
 
-router = APIRouter()
+# Toda ruta con {empresa_id} exige acceso del usuario a esa empresa.
+router = APIRouter(dependencies=[Depends(acceso_empresa_de_ruta)])
 
 
 def _sin_nulos(modelo) -> dict:
@@ -85,8 +89,10 @@ def paises(_: Usuario = Depends(requiere("maestros.empresa.ver"))):
 
 
 @router.get("/empresas", response_model=list[EmpresaSalida], summary="Listar empresas")
-def empresas(_: Usuario = Depends(requiere("maestros.empresa.ver")), db: Session = Depends(get_db)):
-    return service.listar_empresas(db)
+def empresas(
+    usuario: Usuario = Depends(requiere("maestros.empresa.ver")), db: Session = Depends(get_db)
+):
+    return service.empresas_permitidas(db, usuario)
 
 
 @router.get(
@@ -94,9 +100,23 @@ def empresas(_: Usuario = Depends(requiere("maestros.empresa.ver")), db: Session
     response_model=list[EmpresaResumen],
     summary="Empresas activas con las que el usuario puede trabajar (selector de empresa)",
 )
-def empresas_accesibles(_: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)):
-    # Hoy todas las activas; con el acceso por empresa (pendiente) se filtrará por usuario.
-    return service.listar_empresas(db, solo_activas=True)
+def empresas_accesibles(usuario: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)):
+    """Empresas activas a las que el usuario tiene acceso, con sus unidades permitidas."""
+    return [
+        EmpresaResumen(
+            id=e.id,
+            pais=e.pais,
+            identificacion_fiscal=e.identificacion_fiscal,
+            razon_social=e.razon_social,
+            moneda_funcional=e.moneda_funcional,
+            unidades=[
+                UnidadNegocioSalida.model_validate(u)
+                for u in service.unidades_permitidas(db, usuario, e)
+                if u.activo
+            ],
+        )
+        for e in service.empresas_permitidas(db, usuario, solo_activas=True)
+    ]
 
 
 @router.post("/empresas", response_model=EmpresaSalida, status_code=201, summary="Crear empresa")
@@ -153,6 +173,8 @@ def cambiar_unidad_negocio(
     actor: Usuario = Depends(requiere("maestros.empresa.editar")),
     db: Session = Depends(get_db),
 ):
+    un = service.obtener_unidad_negocio(db, unidad_id)
+    service.verificar_acceso_empresa(db, actor, un.empresa_id)
     return service.cambiar_unidad_negocio(db, actor, unidad_id, _sin_nulos(datos))
 
 
@@ -616,3 +638,45 @@ def unidades_articulo(
     return service.fijar_unidades_articulo(
         db, actor, articulo_id, [u.model_dump() for u in datos.unidades]
     )
+
+
+# ---------------------------------------------------------------- acceso de usuarios
+
+
+@router.get(
+    "/accesos/resumen",
+    response_model=dict[uuid.UUID, int],
+    summary="N.° de empresas asignadas a cada usuario",
+)
+def resumen_accesos(
+    _: Usuario = Depends(requiere("seguridad.usuario.ver")), db: Session = Depends(get_db)
+):
+    return service.resumen_accesos(db)
+
+
+@router.get(
+    "/usuarios/{usuario_id}/accesos",
+    response_model=list[AccesoEmpresaItem],
+    summary="Empresas y unidades de negocio de un usuario",
+)
+def accesos_usuario(
+    usuario_id: uuid.UUID,
+    _: Usuario = Depends(requiere("seguridad.usuario.ver")),
+    db: Session = Depends(get_db),
+):
+    return service.accesos_de_usuario(db, usuario_id)
+
+
+@router.put(
+    "/usuarios/{usuario_id}/accesos",
+    response_model=list[AccesoEmpresaItem],
+    summary="Asignar empresas y unidades de negocio a un usuario (reemplaza las anteriores)",
+)
+def fijar_accesos(
+    usuario_id: uuid.UUID,
+    datos: AccesosCambio,
+    actor: Usuario = Depends(requiere("seguridad.usuario.editar")),
+    db: Session = Depends(get_db),
+):
+    usuario = seguridad.obtener_usuario(db, usuario_id)
+    return service.fijar_accesos(db, actor, usuario, [a.model_dump() for a in datos.accesos])

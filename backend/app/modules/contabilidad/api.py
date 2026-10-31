@@ -29,10 +29,12 @@ from app.modules.contabilidad.schemas import (
     SugeridosResultado,
 )
 from app.modules.maestros import service as maestros
+from app.modules.maestros.deps import acceso_empresa_de_ruta
 from app.modules.seguridad.deps import requiere
 from app.modules.seguridad.models import Usuario
 
-router = APIRouter()
+# Toda ruta con {empresa_id} exige acceso del usuario a esa empresa.
+router = APIRouter(dependencies=[Depends(acceso_empresa_de_ruta)])
 
 
 def _cambios(modelo) -> dict:
@@ -93,6 +95,7 @@ def cambiar_cuenta(
     actor: Usuario = Depends(requiere("contabilidad.cuenta.editar")),
     db: Session = Depends(get_db),
 ):
+    maestros.verificar_acceso_empresa(db, actor, service.obtener_cuenta(db, cuenta_id).empresa_id)
     return service.cambiar_cuenta(db, actor, cuenta_id, datos.model_dump(exclude_none=True))
 
 
@@ -136,6 +139,7 @@ def cambiar_perfil(
     for campo in ("nombre", "activo", "cuenta_cargo_id", "cuenta_por_pagar_id"):
         if cambios.get(campo, "") is None:
             cambios.pop(campo)
+    maestros.verificar_acceso_empresa(db, actor, service.obtener_perfil(db, perfil_id).empresa_id)
     return service.cambiar_perfil(db, actor, perfil_id, cambios)
 
 
@@ -181,6 +185,7 @@ def cambiar_centro(
     for campo in ("nombre", "activo", "unidad_negocio_id"):
         if cambios.get(campo, "") is None:
             cambios.pop(campo)
+    maestros.verificar_acceso_empresa(db, actor, service.obtener_centro(db, centro_id).empresa_id)
     return service.cambiar_centro(db, actor, centro_id, cambios)
 
 
@@ -224,6 +229,9 @@ def cambiar_impuesto(
     for campo in ("nombre", "activo", "tasa"):
         if cambios.get(campo, "") is None:
             cambios.pop(campo)
+    maestros.verificar_acceso_empresa(
+        db, actor, service.obtener_impuesto(db, impuesto_id).empresa_id
+    )
     return service.cambiar_impuesto(db, actor, impuesto_id, cambios)
 
 
@@ -283,11 +291,18 @@ def sugeridos(
 )
 def estado_articulo(
     articulo_id: uuid.UUID,
-    _: Usuario = Depends(requiere("maestros.articulo.ver")),
+    usuario: Usuario = Depends(requiere("maestros.articulo.ver")),
     db: Session = Depends(get_db),
 ):
     # Usa el permiso de maestros: quien ve el artículo ve en qué empresas se puede comprar.
-    return service.estado_contable(db, maestros.obtener_articulo(db, articulo_id))
+    return _solo_permitidas(
+        db, usuario, service.estado_contable(db, maestros.obtener_articulo(db, articulo_id))
+    )
+
+
+def _solo_permitidas(db: Session, usuario: Usuario, filas: list[dict]) -> list[dict]:
+    permitidas = {e.id for e in maestros.empresas_permitidas(db, usuario)}
+    return [f for f in filas if f["empresa_id"] in permitidas]
 
 
 @router.put(
@@ -303,7 +318,9 @@ def excepcion_articulo(
     db: Session = Depends(get_db),
 ):
     service.asignar_perfil_articulo(db, actor, empresa_id, articulo_id, datos.perfil_id)
-    return service.estado_contable(db, maestros.obtener_articulo(db, articulo_id))
+    return _solo_permitidas(
+        db, actor, service.estado_contable(db, maestros.obtener_articulo(db, articulo_id))
+    )
 
 
 @router.get(
