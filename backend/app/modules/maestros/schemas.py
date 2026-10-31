@@ -154,3 +154,25 @@ class ConversionCrear(BaseModel):
     origen: str = Field(min_length=1, max_length=10)
     destino: str = Field(min_length=1, max_length=10)
     factor: Decimal = Field(gt=0, max_digits=18, decimal_places=6)
+
+
+# Categorías de artículo
+class CategoriaSalida(Esquema):
+    id: uuid.UUID
+    codigo: str
+    nombre: str
+    padre_id: uuid.UUID | None
+    nivel: int
+    activo: bool
+
+
+class CategoriaCrear(BaseModel):
+    codigo: str = Field(min_length=1, max_length=20)
+    nombre: str = Field(min_length=2, max_length=120)
+    padre_id: uuid.UUID | None = None
+
+
+class CategoriaCambio(BaseModel):
+    nombre: str | None = Field(default=None, min_length=2, max_length=120)
+    padre_id: uuid.UUID | None = None  # enviar null para dejarla en el primer nivel
+    activo: bool | None = None

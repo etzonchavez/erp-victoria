@@ -10,9 +10,9 @@ from sqlalchemy.orm import Session
 from app.core.errors import ErrorERP, no_encontrado
 from app.core.eventos import suscribir
 from app.localizacion import pais
-from app.modules.contabilidad.models import CentroCosto, Cuenta, Impuesto, Perfil
+from app.modules.contabilidad.models import CategoriaPerfil, CentroCosto, Cuenta, Impuesto, Perfil
 from app.modules.maestros import service as maestros
-from app.modules.maestros.models import Empresa
+from app.modules.maestros.models import Categoria, Empresa
 from app.modules.seguridad.models import Usuario
 from app.modules.seguridad.service import auditar
 
@@ -172,6 +172,7 @@ def cargar_plantilla(db: Session, actor: Usuario, empresa: Empresa, commit: bool
 @suscribir("empresa_creada")
 def _al_crear_empresa(db: Session, actor: Usuario, empresa: Empresa) -> None:
     cargar_plantilla(db, actor, empresa, commit=False)
+    aplicar_sugeridos(db, actor, empresa, commit=False)
 
 
 def _padre_por_prefijo(codigo: str, cuentas: dict[str, Cuenta]) -> Cuenta | None:
@@ -598,3 +599,187 @@ def cambiar_impuesto(
         db.commit()
         db.refresh(imp)
     return imp
+
+
+# ---------------------------------------------------------------- categorías de artículo
+
+
+def aplicar_sugeridos(db: Session, actor: Usuario, empresa: Empresa, commit: bool = True) -> dict:
+    """Completa la configuración con lo sugerido por la plantilla del país, sin pisar nada:
+
+    - crea los perfiles de la plantilla que la empresa aún no tiene (si existen sus cuentas);
+    - asigna el perfil sugerido a las categorías de ejemplo que no tengan perfil en la empresa.
+    """
+    p = pais(empresa.pais)
+    plan = p.plan_contable if p else None
+    if not plan:
+        return {"perfiles": 0, "categorias": 0}
+    cuentas = {
+        c.codigo: c
+        for c in db.scalars(select(Cuenta).where(Cuenta.empresa_id == empresa.id))
+        if c.imputable and c.activo
+    }
+    perfiles = {
+        x.codigo: x for x in db.scalars(select(Perfil).where(Perfil.empresa_id == empresa.id))
+    }
+    nuevos_perfiles = 0
+    for codigo, nombre, tipo, cargo, existencia, variacion, por_pagar in plan.PERFILES:
+        necesarias = [c for c in (cargo, existencia, variacion, por_pagar) if c]
+        if codigo in perfiles or any(c not in cuentas for c in necesarias):
+            continue
+        perfil = Perfil(
+            empresa_id=empresa.id,
+            codigo=codigo,
+            nombre=nombre,
+            tipo_articulo=tipo,
+            cuenta_cargo_id=cuentas[cargo].id,
+            cuenta_existencia_id=cuentas[existencia].id if existencia else None,
+            cuenta_variacion_id=cuentas[variacion].id if variacion else None,
+            cuenta_por_pagar_id=cuentas[por_pagar].id,
+            creado_por=actor.id if actor else None,
+        )
+        db.add(perfil)
+        perfiles[codigo] = perfil
+        nuevos_perfiles += 1
+    db.flush()
+    asignadas = set(
+        db.scalars(
+            select(CategoriaPerfil.categoria_id).where(CategoriaPerfil.empresa_id == empresa.id)
+        )
+    )
+    categorias = {
+        c.codigo: c
+        for c in db.scalars(select(Categoria).where(Categoria.codigo.in_(plan.CATEGORIAS_PERFIL)))
+    }
+    nuevas = 0
+    for cat_codigo, perfil_codigo in plan.CATEGORIAS_PERFIL.items():
+        cat, perfil = categorias.get(cat_codigo), perfiles.get(perfil_codigo)
+        if cat and perfil and perfil.activo and cat.id not in asignadas:
+            db.add(
+                CategoriaPerfil(
+                    empresa_id=empresa.id,
+                    categoria_id=cat.id,
+                    perfil_id=perfil.id,
+                    creado_por=actor.id if actor else None,
+                )
+            )
+            nuevas += 1
+    db.flush()
+    resultado = {"perfiles": nuevos_perfiles, "categorias": nuevas}
+    if nuevos_perfiles or nuevas:
+        auditar(
+            db,
+            actor,
+            "aplicar_sugeridos",
+            "categoria_perfil",
+            empresa.id,
+            {"empresa": empresa.razon_social, **resultado},
+        )
+    if commit:
+        db.commit()
+    return resultado
+
+
+def _asignaciones(db: Session, empresa_id: uuid.UUID) -> dict[uuid.UUID, CategoriaPerfil]:
+    return {
+        a.categoria_id: a
+        for a in db.scalars(select(CategoriaPerfil).where(CategoriaPerfil.empresa_id == empresa_id))
+    }
+
+
+def perfil_de_categoria(
+    db: Session, empresa_id: uuid.UUID, categoria_id: uuid.UUID
+) -> tuple[Perfil | None, Categoria | None]:
+    """Perfil efectivo de una categoría en una empresa y la categoría de la que viene.
+
+    Recorre la categoría y sus padres; devuelve (None, None) si ninguno tiene perfil.
+    Lo usarán los artículos y las compras.
+    """
+    asignaciones = _asignaciones(db, empresa_id)
+    for cat in maestros.ancestros_categoria(db, maestros.obtener_categoria(db, categoria_id)):
+        if cat.id in asignaciones:
+            return asignaciones[cat.id].perfil, cat
+    return None, None
+
+
+def categorias_con_perfil(db: Session, empresa_id: uuid.UUID) -> list[dict]:
+    """Árbol de categorías con el perfil propio y el efectivo (heredado) en la empresa."""
+    maestros.obtener_empresa(db, empresa_id)
+    asignaciones = _asignaciones(db, empresa_id)
+    categorias = maestros.listar_categorias(db)
+    por_id = {c.id: c for c in categorias}
+    resultado = []
+    for cat in categorias:
+        propio = asignaciones.get(cat.id)
+        efectivo, origen, actual = None, None, cat
+        while actual:
+            if actual.id in asignaciones:
+                efectivo, origen = asignaciones[actual.id].perfil, actual
+                break
+            actual = por_id.get(actual.padre_id) if actual.padre_id else None
+        resultado.append(
+            {
+                "categoria_id": cat.id,
+                "perfil_propio": propio.perfil if propio else None,
+                "perfil_efectivo": efectivo,
+                "heredado_de": origen if origen and origen.id != cat.id else None,
+            }
+        )
+    return resultado
+
+
+def asignar_perfil_categoria(
+    db: Session,
+    actor: Usuario,
+    empresa_id: uuid.UUID,
+    categoria_id: uuid.UUID,
+    perfil_id: uuid.UUID | None,
+) -> None:
+    """Asigna (o quita, con None) el perfil propio. Sin perfil propio, la categoría hereda."""
+    empresa = maestros.obtener_empresa(db, empresa_id)
+    cat = maestros.obtener_categoria(db, categoria_id)
+    actual = db.scalar(
+        select(CategoriaPerfil).where(
+            CategoriaPerfil.empresa_id == empresa.id, CategoriaPerfil.categoria_id == cat.id
+        )
+    )
+    antes = actual.perfil.codigo if actual else None
+    if perfil_id is None:
+        if not actual:
+            return
+        db.delete(actual)
+        despues = None
+    else:
+        perfil = obtener_perfil(db, perfil_id)
+        if perfil.empresa_id != empresa.id:
+            raise ErrorERP(422, "perfil_otra_empresa", "El perfil contable es de otra empresa")
+        if not perfil.activo:
+            raise ErrorERP(422, "perfil_inactivo", f"El perfil {perfil.codigo} está inactivo")
+        if actual and actual.perfil_id == perfil.id:
+            return
+        if actual:
+            actual.perfil_id, actual.actualizado_por = perfil.id, actor.id
+        else:
+            db.add(
+                CategoriaPerfil(
+                    empresa_id=empresa.id,
+                    categoria_id=cat.id,
+                    perfil_id=perfil.id,
+                    creado_por=actor.id,
+                    actualizado_por=actor.id,
+                )
+            )
+        despues = perfil.codigo
+    auditar(
+        db,
+        actor,
+        "asignar_perfil",
+        "categoria_perfil",
+        cat.id,
+        {
+            "empresa": empresa.razon_social,
+            "categoria": cat.codigo,
+            "perfil": {"antes": antes, "despues": despues or "heredado"},
+        },
+    )
+    db.commit()

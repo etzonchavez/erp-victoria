@@ -78,6 +78,15 @@ export type CentroCosto = {
 };
 export type Impuesto = { id: string; codigo: string; nombre: string; tasa: string; cuenta: CuentaResumen | null; activo: boolean };
 
+export type Categoria = { id: string; codigo: string; nombre: string; padre_id: string | null; nivel: number; activo: boolean };
+export type PerfilResumen = { id: string; codigo: string; nombre: string; tipo_articulo: string };
+export type CategoriaPerfil = {
+  categoria_id: string;
+  perfil_propio: PerfilResumen | null;
+  perfil_efectivo: PerfilResumen | null;
+  heredado_de: { id: string; codigo: string; nombre: string } | null;
+};
+
 export const NOMBRE_TIPO_ARTICULO: Record<string, string> = {
   bien_inventariable: "Bien inventariable",
   bien_no_inventariable: "Bien no inventariable",

@@ -302,3 +302,9 @@ th.numero, td.numero:not(:first-child) { text-align: right; }
 .tabla-plan .fila-titulo td { background: var(--papel); font-weight: 600; }
 .codigo-cuenta { font-variant-numeric: tabular-nums; font-weight: 600; margin-right: 8px; color: var(--tinta); }
 .tabla-plan td:nth-child(4), .tabla-plan td:nth-child(5) { white-space: nowrap; }
+
+/* ---------- categorías ---------- */
+.etiqueta-alerta { background: #fff4e0; color: #7a4b00; }
+.aviso-con-accion { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.celda-accion { text-align: right; white-space: nowrap; }
+.barra-filtros .filtro input[type="checkbox"] { accent-color: var(--sello); }

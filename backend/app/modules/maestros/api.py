@@ -10,6 +10,9 @@ from app.core.database import get_db
 from app.localizacion import PAISES
 from app.modules.maestros import service
 from app.modules.maestros.schemas import (
+    CategoriaCambio,
+    CategoriaCrear,
+    CategoriaSalida,
     ConversionCrear,
     ConversionSalida,
     EmpresaCambio,
@@ -255,3 +258,44 @@ def eliminar_conversion(
 ):
     service.eliminar_conversion(db, actor, conversion_id)
     return Response(status_code=204)
+
+
+# ---------------------------------------------------------------- categorías
+
+
+@router.get(
+    "/categorias", response_model=list[CategoriaSalida], summary="Árbol de categorías (en orden)"
+)
+def categorias(
+    _: Usuario = Depends(requiere("maestros.categoria.ver")), db: Session = Depends(get_db)
+):
+    return service.listar_categorias(db)
+
+
+@router.post(
+    "/categorias", response_model=CategoriaSalida, status_code=201, summary="Crear categoría"
+)
+def crear_categoria(
+    datos: CategoriaCrear,
+    actor: Usuario = Depends(requiere("maestros.categoria.editar")),
+    db: Session = Depends(get_db),
+):
+    return service.crear_categoria(db, actor, datos.codigo, datos.nombre, datos.padre_id)
+
+
+@router.patch(
+    "/categorias/{categoria_id}",
+    response_model=CategoriaSalida,
+    summary="Renombrar, mover o desactivar categoría",
+)
+def cambiar_categoria(
+    categoria_id: uuid.UUID,
+    datos: CategoriaCambio,
+    actor: Usuario = Depends(requiere("maestros.categoria.editar")),
+    db: Session = Depends(get_db),
+):
+    cambios = datos.model_dump(exclude_unset=True)
+    for campo in ("nombre", "activo"):
+        if cambios.get(campo, "") is None:
+            cambios.pop(campo)
+    return service.cambiar_categoria(db, actor, categoria_id, cambios)

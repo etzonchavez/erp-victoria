@@ -59,13 +59,18 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("maestros.tipo_cambio.registrar", "Registrar el tipo de cambio diario"),
     PermisoDef("maestros.unidad.ver", "Ver unidades de medida y conversiones"),
     PermisoDef("maestros.unidad.editar", "Crear y editar unidades de medida y conversiones"),
+    PermisoDef("maestros.categoria.ver", "Ver el árbol de categorías de artículo"),
+    PermisoDef("maestros.categoria.editar", "Crear, mover y editar categorías de artículo"),
     # Contabilidad base (ADR-004)
     PermisoDef("contabilidad.cuenta.ver", "Ver el plan de cuentas"),
     PermisoDef(
         "contabilidad.cuenta.editar", "Crear y editar cuentas; cargar la plantilla del país"
     ),
     PermisoDef("contabilidad.perfil.ver", "Ver perfiles contables"),
-    PermisoDef("contabilidad.perfil.editar", "Crear y editar perfiles contables"),
+    PermisoDef(
+        "contabilidad.perfil.editar",
+        "Crear y editar perfiles contables y asignarlos a las categorías de artículo",
+    ),
     PermisoDef("contabilidad.centro_costo.ver", "Ver centros de costo"),
     PermisoDef("contabilidad.centro_costo.editar", "Crear y editar centros de costo"),
     PermisoDef("contabilidad.impuesto.ver", "Ver impuestos"),
@@ -185,6 +190,8 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.moneda.editar",
             "maestros.unidad.ver",
             "maestros.unidad.editar",
+            "maestros.categoria.ver",
+            "maestros.categoria.editar",
         ],
     ),
     RolDef(
@@ -198,6 +205,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.moneda.ver",
             "maestros.tipo_cambio.registrar",
             "maestros.unidad.ver",
+            "maestros.categoria.ver",
         ],
     ),
     RolDef(
@@ -206,7 +214,12 @@ ROLES_ESTANDAR: list[RolDef] = [
         "Consulta de maestros",
         "consulta",
         "Consulta empresas, monedas, tipos de cambio y unidades sin poder cambiarlos.",
-        ["maestros.empresa.ver", "maestros.moneda.ver", "maestros.unidad.ver"],
+        [
+            "maestros.empresa.ver",
+            "maestros.moneda.ver",
+            "maestros.unidad.ver",
+            "maestros.categoria.ver",
+        ],
     ),
     RolDef(
         "ERP_CNT_ADMINISTRADOR",

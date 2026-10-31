@@ -13,6 +13,7 @@ from app.core.eventos import emitir
 from app.localizacion import PAISES, pais
 from app.modules.maestros import datos_base
 from app.modules.maestros.models import (
+    Categoria,
     ConversionUnidad,
     Empresa,
     Moneda,
@@ -27,6 +28,8 @@ CODIGO_UN = re.compile(r"^[A-Z0-9][A-Z0-9_-]{0,19}$")
 CODIGO_UNIDAD = re.compile(r"^[A-Z0-9]{1,10}$")
 CODIGO_OFICIAL = re.compile(r"^[A-Z0-9]{2,3}$")
 CODIGO_MONEDA = re.compile(r"^[A-Z]{3}$")
+CODIGO_CATEGORIA = re.compile(r"^[A-Z0-9][A-Z0-9_-]{0,19}$")
+NIVELES_CATEGORIA = 3
 
 
 def _cambios(obj, cambios: dict, campos: tuple[str, ...]) -> dict:
@@ -70,6 +73,19 @@ def preparar(db: Session) -> None:
     for origen, destino, factor in datos_base.CONVERSIONES:
         if (origen, destino) not in conversiones:
             db.add(ConversionUnidad(origen=origen, destino=destino, factor=factor))
+    categorias = {c.codigo: c for c in db.scalars(select(Categoria))}
+    for codigo, nombre, padre in datos_base.CATEGORIAS:
+        if codigo not in categorias:
+            p = categorias.get(padre) if padre else None
+            cat = Categoria(
+                id=uuid.uuid4(),
+                codigo=codigo,
+                nombre=nombre,
+                padre_id=p.id if p else None,
+                nivel=p.nivel + 1 if p else 1,
+            )
+            db.add(cat)
+            categorias[codigo] = cat
     db.commit()
 
 
@@ -543,3 +559,152 @@ def convertir(db: Session, cantidad: Decimal, origen: str, destino: str) -> Deci
             return cantidad * conv.factor
         return cantidad / conv.factor
     raise ErrorERP(422, "sin_conversion", f"No hay conversión entre {origen} y {destino}")
+
+
+# ---------------------------------------------------------------- categorías de artículo
+
+
+def listar_categorias(db: Session) -> list[Categoria]:
+    """Ordenadas como árbol: cada categoría seguida de sus subcategorías."""
+    todas = list(db.scalars(select(Categoria).order_by(Categoria.codigo)))
+    hijas: dict[uuid.UUID | None, list[Categoria]] = {}
+    for c in todas:
+        hijas.setdefault(c.padre_id, []).append(c)
+    orden: list[Categoria] = []
+
+    def recorrer(padre_id: uuid.UUID | None) -> None:
+        for c in hijas.get(padre_id, []):
+            orden.append(c)
+            recorrer(c.id)
+
+    recorrer(None)
+    return orden
+
+
+def obtener_categoria(db: Session, categoria_id: uuid.UUID) -> Categoria:
+    cat = db.get(Categoria, categoria_id)
+    if not cat:
+        raise no_encontrado("La categoría")
+    return cat
+
+
+def ancestros_categoria(db: Session, categoria: Categoria) -> list[Categoria]:
+    """La categoría y sus padres, de la más específica a la raíz."""
+    cadena = [categoria]
+    while cadena[-1].padre_id:
+        cadena.append(db.get(Categoria, cadena[-1].padre_id))
+    return cadena
+
+
+def _descendientes(db: Session, categoria: Categoria) -> list[Categoria]:
+    todas = list(db.scalars(select(Categoria)))
+    resultado, pendientes = [], [categoria.id]
+    while pendientes:
+        actual = pendientes.pop()
+        for c in todas:
+            if c.padre_id == actual:
+                resultado.append(c)
+                pendientes.append(c.id)
+    return resultado
+
+
+def _altura(db: Session, categoria: Categoria) -> int:
+    """Niveles que ocupa la rama: 1 si no tiene subcategorías."""
+    desc = _descendientes(db, categoria)
+    return 1 + (max(c.nivel for c in desc) - categoria.nivel if desc else 0)
+
+
+def crear_categoria(
+    db: Session, actor: Usuario, codigo: str, nombre: str, padre_id: uuid.UUID | None
+) -> Categoria:
+    codigo = codigo.strip().upper()
+    if not CODIGO_CATEGORIA.match(codigo):
+        raise ErrorERP(
+            422,
+            "codigo_invalido",
+            "El código usa mayúsculas, números, guion o guion bajo (hasta 20 caracteres)",
+        )
+    if db.scalar(select(Categoria.id).where(Categoria.codigo == codigo)):
+        raise ErrorERP(409, "categoria_duplicada", f"Ya existe la categoría {codigo}")
+    padre = obtener_categoria(db, padre_id) if padre_id else None
+    if padre and not padre.activo:
+        raise ErrorERP(422, "padre_inactivo", f"La categoría {padre.codigo} está inactiva")
+    nivel = padre.nivel + 1 if padre else 1
+    if nivel > NIVELES_CATEGORIA:
+        raise ErrorERP(
+            422, "nivel_maximo", f"Las categorías tienen como máximo {NIVELES_CATEGORIA} niveles"
+        )
+    cat = Categoria(
+        codigo=codigo,
+        nombre=nombre.strip(),
+        padre_id=padre.id if padre else None,
+        nivel=nivel,
+        creado_por=actor.id,
+        actualizado_por=actor.id,
+    )
+    db.add(cat)
+    db.flush()
+    auditar(
+        db,
+        actor,
+        "crear",
+        "categoria",
+        cat.id,
+        {"codigo": codigo, "nombre": cat.nombre, "padre": padre.codigo if padre else None},
+    )
+    db.commit()
+    return cat
+
+
+def cambiar_categoria(
+    db: Session, actor: Usuario, categoria_id: uuid.UUID, cambios: dict
+) -> Categoria:
+    """Nombre, padre (mover la rama) y estado. El código no cambia."""
+    cat = obtener_categoria(db, categoria_id)
+    detalle: dict = {}
+    if "padre_id" in cambios and cambios["padre_id"] != cat.padre_id:
+        nuevo = obtener_categoria(db, cambios["padre_id"]) if cambios["padre_id"] else None
+        if nuevo and (nuevo.id == cat.id or nuevo in _descendientes(db, cat)):
+            raise ErrorERP(
+                422,
+                "ciclo",
+                "Una categoría no puede quedar dentro de sí misma o de sus subcategorías",
+            )
+        if nuevo and not nuevo.activo:
+            raise ErrorERP(422, "padre_inactivo", f"La categoría {nuevo.codigo} está inactiva")
+        nivel = nuevo.nivel + 1 if nuevo else 1
+        if nivel - 1 + _altura(db, cat) > NIVELES_CATEGORIA:
+            raise ErrorERP(
+                422,
+                "nivel_maximo",
+                f"Al moverla, la rama superaría los {NIVELES_CATEGORIA} niveles",
+            )
+        anterior = db.get(Categoria, cat.padre_id) if cat.padre_id else None
+        delta = nivel - cat.nivel
+        for d in _descendientes(db, cat):
+            d.nivel += delta
+        cat.padre_id, cat.nivel = (nuevo.id if nuevo else None), nivel
+        detalle["padre"] = {
+            "antes": anterior.codigo if anterior else None,
+            "despues": nuevo.codigo if nuevo else None,
+        }
+    if cambios.get("activo") is False and cat.activo:
+        activas = [d.codigo for d in _descendientes(db, cat) if d.activo]
+        if activas:
+            raise ErrorERP(
+                409,
+                "tiene_subcategorias_activas",
+                f"Desactiva primero sus subcategorías: {', '.join(activas)}",
+            )
+    if cambios.get("activo") is True and not cat.activo and cat.padre_id:
+        padre = db.get(Categoria, cat.padre_id)
+        if not padre.activo:
+            raise ErrorERP(422, "padre_inactivo", f"Activa primero la categoría {padre.codigo}")
+    if cambios.get("nombre"):
+        cambios["nombre"] = cambios["nombre"].strip()
+    detalle |= _cambios(cat, cambios, ("nombre", "activo"))
+    if detalle:
+        cat.actualizado_por = actor.id
+        auditar(db, actor, "editar", "categoria", cat.id, {"codigo": cat.codigo, **detalle})
+        db.commit()
+    return cat

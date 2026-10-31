@@ -58,6 +58,8 @@ def test_perfiles_e_impuestos_precargados(client, h, empresa):
         "CONSUMO_DIRECTO",
         "SERVICIO",
         "ACTIVO_FIJO",
+        "ACTIVO_MUEBLES",
+        "ACTIVO_MAQUINARIA",
     }
     m = p["MERCADERIA"]
     assert (m["cuenta_cargo"]["codigo"], m["cuenta_existencia"]["codigo"]) == ("6011", "20111")

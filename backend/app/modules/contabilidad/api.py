@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.modules.contabilidad import service
 from app.modules.contabilidad.schemas import (
+    CategoriaPerfilCambio,
+    CategoriaPerfilSalida,
     CentroCambio,
     CentroCrear,
     CentroSalida,
@@ -22,6 +24,7 @@ from app.modules.contabilidad.schemas import (
     PerfilCrear,
     PerfilSalida,
     PlantillaResultado,
+    SugeridosResultado,
 )
 from app.modules.maestros import service as maestros
 from app.modules.seguridad.deps import requiere
@@ -220,3 +223,49 @@ def cambiar_impuesto(
         if cambios.get(campo, "") is None:
             cambios.pop(campo)
     return service.cambiar_impuesto(db, actor, impuesto_id, cambios)
+
+
+# ---------------------------------------------------------------- categorías de artículo
+
+
+@router.get(
+    "/empresas/{empresa_id}/categorias",
+    response_model=list[CategoriaPerfilSalida],
+    summary="Perfil propio y efectivo (heredado) de cada categoría en la empresa",
+)
+def categorias(
+    empresa_id: uuid.UUID,
+    _: Usuario = Depends(requiere("contabilidad.perfil.ver")),
+    db: Session = Depends(get_db),
+):
+    return service.categorias_con_perfil(db, empresa_id)
+
+
+@router.put(
+    "/empresas/{empresa_id}/categorias/{categoria_id}/perfil",
+    response_model=list[CategoriaPerfilSalida],
+    summary="Asignar perfil a una categoría (null = heredar del padre)",
+)
+def asignar_perfil(
+    empresa_id: uuid.UUID,
+    categoria_id: uuid.UUID,
+    datos: CategoriaPerfilCambio,
+    actor: Usuario = Depends(requiere("contabilidad.perfil.editar")),
+    db: Session = Depends(get_db),
+):
+    service.asignar_perfil_categoria(db, actor, empresa_id, categoria_id, datos.perfil_id)
+    return service.categorias_con_perfil(db, empresa_id)
+
+
+@router.post(
+    "/empresas/{empresa_id}/sugeridos",
+    response_model=SugeridosResultado,
+    summary="Completar perfiles de la plantilla y perfiles sugeridos de las categorías de ejemplo",
+)
+def sugeridos(
+    empresa_id: uuid.UUID,
+    actor: Usuario = Depends(requiere("contabilidad.perfil.editar")),
+    db: Session = Depends(get_db),
+):
+    empresa = maestros.obtener_empresa(db, empresa_id)
+    return service.aplicar_sugeridos(db, actor, empresa)

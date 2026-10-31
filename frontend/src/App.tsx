@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Auditoria from "./paginas/Auditoria";
+import Categorias from "./paginas/Categorias";
 import CentrosCosto from "./paginas/CentrosCosto";
 import Impuestos from "./paginas/Impuestos";
 import PerfilesContables from "./paginas/PerfilesContables";
@@ -30,6 +31,7 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
       { ruta: "empresas", nombre: "Empresas", permiso: "maestros.empresa.ver", pagina: () => <Empresas /> },
       { ruta: "monedas", nombre: "Monedas y tipo de cambio", permiso: "maestros.moneda.ver", pagina: () => <Monedas /> },
       { ruta: "unidades", nombre: "Unidades de medida", permiso: "maestros.unidad.ver", pagina: () => <Unidades /> },
+      { ruta: "categorias", nombre: "Categorías de artículo", permiso: "maestros.categoria.ver", pagina: () => <Categorias /> },
     ],
   },
   {

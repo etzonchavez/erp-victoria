@@ -51,3 +51,22 @@ CONVERSIONES = [
     ("M", "CM", Decimal("100")),
     ("DIA", "H", Decimal("24")),
 ]
+
+# Árbol de categorías de ejemplo para empezar rápido: (código, nombre, código del padre).
+# El cliente las renombra, desactiva o agrega las suyas.
+CATEGORIAS = [
+    ("MER", "Mercaderías", None),
+    ("MP", "Materias primas", None),
+    ("SUM", "Suministros", None),
+    ("SUM-REP", "Repuestos", "SUM"),
+    ("SUM-OFI", "Útiles de oficina", "SUM"),
+    ("SUM-LIM", "Artículos de limpieza", "SUM"),
+    ("SRV", "Servicios", None),
+    ("SRV-MAN", "Mantenimiento y reparaciones", "SRV"),
+    ("SRV-CON", "Asesoría y consultoría", "SRV"),
+    ("SRV-TRA", "Transporte y fletes", "SRV"),
+    ("AF", "Activo fijo", None),
+    ("AF-TI", "Equipos de cómputo", "AF"),
+    ("AF-MUE", "Muebles y enseres", "AF"),
+    ("AF-MAQ", "Maquinaria y equipo", "AF"),
+]

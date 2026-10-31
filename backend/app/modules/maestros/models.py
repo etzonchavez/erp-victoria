@@ -100,3 +100,21 @@ class ConversionUnidad(ConAuditoria, Base):
     origen: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
     destino: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
     factor: Mapped[Decimal] = mapped_column(Numeric(18, 6))
+
+
+class Categoria(ConAuditoria, Base):
+    """Árbol de categorías de artículo, compartido por todas las empresas (hasta 3 niveles).
+
+    El perfil contable de cada categoría lo asigna Contabilidad por empresa
+    (cnt_categoria_perfil), así Maestros no depende de Contabilidad.
+    """
+
+    __tablename__ = "mae_categoria"
+
+    codigo: Mapped[str] = mapped_column(String(20), unique=True)
+    nombre: Mapped[str] = mapped_column(String(120))
+    padre_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("mae_categoria.id"), nullable=True
+    )
+    nivel: Mapped[int] = mapped_column(Integer)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)

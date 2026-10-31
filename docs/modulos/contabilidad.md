@@ -1,6 +1,6 @@
 # Contabilidad base
 
-**Versión:** 0.7.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos) · Asientos reales: Fase 1 (2027)
+**Versión:** 0.8.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos) · Asientos reales: Fase 1 (2027)
 
 ## 1. Objetivo
 
@@ -25,7 +25,7 @@ El módulo **Contabilidad** se activa en *Administración → Módulos*. Todas l
 
 ## Puesta en marcha
 
-1. Al **crear una empresa** (Maestros → Empresas) se cargan automáticamente su plan de cuentas, los 6 perfiles contables y los impuestos del país, aunque el módulo Contabilidad esté inactivo.
+1. Al **crear una empresa** (Maestros → Empresas) se cargan automáticamente su plan de cuentas, los 8 perfiles contables, los impuestos del país y los perfiles sugeridos de las categorías, aunque el módulo Contabilidad esté inactivo.
 2. Las empresas creadas antes de la versión 0.7.0 no tienen plan: en **Contabilidad → Plan de cuentas** aparece el botón *Cargar plantilla del país (PCGE)*. Solo funciona si la empresa no tiene cuentas.
 3. El contador revisa las cuentas marcadas *por validar*, agrega las subcuentas que use su empresa y crea los centros de costo.
 
@@ -58,6 +58,8 @@ Reglas:
 | `CONSUMO_DIRECTO` | Bien no inventariable | 656\* Suministros | — | 4212 Emitidas |
 | `SERVICIO` | Servicio | 639\* Otros servicios prestados por terceros | — | 4212 Emitidas |
 | `ACTIVO_FIJO` | Activo fijo | 33611 Equipo para procesamiento de información – Costo | — | 4654 Pasivos por compra de PPE |
+| `ACTIVO_MUEBLES` | Activo fijo | 33511 Muebles – Costo | — | 4654 |
+| `ACTIVO_MAQUINARIA` | Activo fijo | 33311 Maquinaria y equipo de explotación – Costo | — | 4654 |
 
 Códigos de los elementos 2, 3 y 4 verificados contra el catálogo oficial del PCGE Modificado 2019. Los marcados con \* (elemento 6) se tomaron de práctica contable y quedan **por validar**.
 
@@ -74,6 +76,10 @@ Validaciones de cada perfil según el tipo de artículo:
 | Activo fijo | Activo | No llevan | Pasivo |
 
 Todas las cuentas deben ser imputables, activas y de la misma empresa. El código y el tipo del perfil no cambian; las cuentas sí, y el cambio aplica a las compras nuevas.
+
+### Perfil de cada categoría de artículo
+
+Las categorías de artículo son comunes a todas las empresas ([Maestros](maestros.md#categorias-de-articulo)); cada empresa asigna su perfil contable a cada categoría. Una categoría sin perfil propio hereda el de su categoría padre. Solo quien tiene `contabilidad.perfil.editar` asigna o cambia perfiles, desde **Maestros → Categorías de artículo**. Todo cambio queda en la auditoría con el perfil anterior y el nuevo.
 
 ### Centros de costo
 

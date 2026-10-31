@@ -1,6 +1,6 @@
 # Maestros
 
-**Versión:** 0.6.0 · **Estado:** empresas, monedas, tipo de cambio y unidades disponibles; categorías, artículos y proveedores en construcción (Semana 3)
+**Versión:** 0.8.0 · **Estado:** empresas, monedas, tipo de cambio, unidades y categorías disponibles; artículos y proveedores en construcción (Semana 3)
 
 ## 1. Objetivo del módulo
 
@@ -22,7 +22,7 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | `maestros.tipo_cambio.registrar` | Registrar o corregir el tipo de cambio de una fecha |
 | `maestros.unidad.ver` / `.editar` | Unidades de medida y conversiones generales |
 | `maestros.proveedor.ver` / `.crear` / `.editar` | Proveedores |
-| `maestros.categoria.ver` / `.editar` | Árbol de categorías y su perfil contable |
+| `maestros.categoria.ver` / `.editar` | Ver / crear, mover y editar el árbol de categorías (el perfil contable lo asigna Contabilidad) |
 | `maestros.articulo.ver` / `.crear` / `.editar` | Artículos |
 | `maestros.articulo.excepcion_contable` | Asignar a un artículo un perfil distinto al de su categoría (solo roles contables) |
 | `maestros.importacion.ejecutar` | Carga desde Excel |
@@ -30,26 +30,40 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 ## 3. Flujo de configuración
 
 1. **Empresa** → datos legales (RUC, razón social, país, moneda funcional).
-2. Al guardar la empresa se carga la **plantilla contable del país**: plan de cuentas, 6 perfiles contables e impuestos (ver [Contabilidad base](contabilidad.md)).
+2. Al guardar la empresa se carga la **plantilla contable del país**: plan de cuentas, 8 perfiles contables, impuestos y perfiles sugeridos para las categorías de ejemplo (ver [Contabilidad base](contabilidad.md)).
 3. **Unidades de negocio** y sus **centros de costo**.
 4. **Monedas** y **unidades de medida** (vienen precargadas; se activan las que se usan).
-5. **Categorías** → árbol de hasta 3 niveles; cada rama apunta a un perfil contable.
+5. **Categorías** → árbol de hasta 3 niveles, común a todas las empresas; Contabilidad asigna a cada rama un perfil contable por empresa.
 6. **Artículos** → eligen tipo y categoría; las cuentas se resuelven solas.
 7. **Proveedores**.
 
 ## 4. Pantallas y campos
 
-### Categorías
+### Categorías de artículo
 
-| Campo | Regla |
-| --- | --- |
-| Código | Obligatorio, único, mayúsculas (ej. `SUM-OFI`) |
-| Nombre | Obligatorio |
-| Categoría padre | Opcional; máximo 3 niveles |
-| Perfil contable | Opcional en subcategorías (hereda del padre); obligatorio en el primer nivel |
-| Activa | Una categoría inactiva no admite artículos nuevos |
+El árbol es **compartido por todas las empresas** de la instalación, así un artículo se registra una sola vez. Lo que cambia por empresa es el **perfil contable** de cada categoría.
 
-La pantalla muestra el árbol y, en cada categoría, el **perfil efectivo** y su origen ("propio" o "heredado de Suministros").
+| Campo | Regla | Quién lo cambia |
+| --- | --- | --- |
+| Código | Mayúsculas, números, `-` o `_`, hasta 20; único; no cambia | Maestros |
+| Nombre | Obligatorio | Maestros |
+| Categoría padre | Opcional; máximo **3 niveles**. Al mover una categoría se mueve con sus subcategorías; no puede quedar dentro de sí misma | Maestros |
+| Perfil contable (por empresa) | Opcional: si una categoría no tiene perfil propio, **hereda** el de su categoría padre | Contabilidad (`contabilidad.perfil.editar`) |
+| Activa | Para desactivar una categoría, primero se desactivan sus subcategorías | Maestros |
+
+La pantalla muestra el árbol y, para la empresa elegida, el **perfil efectivo** de cada categoría y si es propio o "heredado de…". Si alguna categoría activa no tiene perfil, aparece un aviso: sus artículos no podrán comprarse hasta asignarle uno.
+
+**Categorías de ejemplo.** Toda instalación trae un árbol inicial que se puede renombrar, desactivar o ampliar:
+
+| Categoría | Subcategorías | Perfil sugerido (Perú) |
+| --- | --- | --- |
+| MER Mercaderías | — | Mercaderías |
+| MP Materias primas | — | Materias primas |
+| SUM Suministros | REP Repuestos (hereda) · OFI Útiles de oficina · LIM Limpieza | Suministros de almacén; OFI y LIM: Consumo directo |
+| SRV Servicios | MAN Mantenimiento · CON Consultoría · TRA Transporte (heredan) | Servicios de terceros |
+| AF Activo fijo | TI Cómputo (hereda) · MUE Muebles · MAQ Maquinaria | Activo fijo – cómputo / muebles / maquinaria |
+
+Al crear una empresa se asignan los perfiles sugeridos. Para empresas creadas antes de la versión 0.8.0, el botón **Aplicar perfiles sugeridos** crea los perfiles que falten y asigna los sugeridos sin cambiar lo que ya esté configurado.
 
 ### Artículos
 
@@ -139,6 +153,8 @@ La plantilla contable, los impuestos y las unidades de medida precargadas vienen
 ## 9. Preguntas frecuentes
 
 **¿El usuario de compras tiene que saber de cuentas contables?** No. Elige el artículo; la cuenta sale de la categoría.
+
+**Tenemos dos empresas: ¿debo crear las categorías dos veces?** No. El árbol es uno solo; el contador de cada empresa asigna su perfil contable.
 
 **Hoy es feriado y no hay tipo de cambio, ¿qué pasa?** El ERP toma el último registrado antes de esa fecha.
 

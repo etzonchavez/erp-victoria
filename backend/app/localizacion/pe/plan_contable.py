@@ -101,8 +101,24 @@ PERFILES: list[tuple[str, str, str, str, str | None, str | None, str]] = [
     ),
     ("CONSUMO_DIRECTO", "Consumo directo", "bien_no_inventariable", "656", None, None, "4212"),
     ("SERVICIO", "Servicios de terceros", "servicio", "639", None, None, "4212"),
-    ("ACTIVO_FIJO", "Activo fijo", "activo_fijo", "33611", None, None, "4654"),
+    ("ACTIVO_FIJO", "Activo fijo – equipos de cómputo", "activo_fijo", "33611", None, None, "4654"),
+    ("ACTIVO_MUEBLES", "Activo fijo – muebles", "activo_fijo", "33511", None, None, "4654"),
+    ("ACTIVO_MAQUINARIA", "Activo fijo – maquinaria", "activo_fijo", "33311", None, None, "4654"),
 ]
+
+# Perfil sugerido para las categorías de ejemplo (código de categoría → código de perfil).
+# Las subcategorías que no aparecen heredan el perfil de su categoría padre.
+CATEGORIAS_PERFIL: dict[str, str] = {
+    "MER": "MERCADERIA",
+    "MP": "MATERIA_PRIMA",
+    "SUM": "SUMINISTRO_ALMACEN",
+    "SUM-OFI": "CONSUMO_DIRECTO",
+    "SUM-LIM": "CONSUMO_DIRECTO",
+    "SRV": "SERVICIO",
+    "AF": "ACTIVO_FIJO",
+    "AF-MUE": "ACTIVO_MUEBLES",
+    "AF-MAQ": "ACTIVO_MAQUINARIA",
+}
 
 # (código, nombre, tasa %, cuenta)
 IMPUESTOS: list[tuple[str, str, Decimal, str | None]] = [

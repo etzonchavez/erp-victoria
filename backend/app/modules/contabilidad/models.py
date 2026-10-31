@@ -84,3 +84,19 @@ class Impuesto(ConAuditoria, Base):
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
 
     cuenta: Mapped[Cuenta | None] = relationship(lazy="joined")
+
+
+class CategoriaPerfil(ConAuditoria, Base):
+    """Perfil contable que una empresa asigna a una categoría de artículo (compartida).
+
+    Si una categoría no tiene fila para la empresa, hereda el perfil de su categoría padre.
+    """
+
+    __tablename__ = "cnt_categoria_perfil"
+    __table_args__ = (UniqueConstraint("empresa_id", "categoria_id"),)
+
+    empresa_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_empresa.id"), index=True)
+    categoria_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_categoria.id"))
+    perfil_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cnt_perfil.id"))
+
+    perfil: Mapped[Perfil] = relationship(lazy="joined")

@@ -13,7 +13,7 @@ Además, en Perú el MEF aprobó el **PCGE 2026** (Resolución N.° 002-2026-EF/
 Construir ahora una **contabilidad base de configuración**, sin asientos reales:
 
 1. **Plan de cuentas por empresa**, cargado desde una **plantilla versionada por país** (Perú: `PCGE-2019` reducido) y editable. Cuentas jerárquicas; solo las cuentas *imputables* (último nivel) se usan en transacciones.
-2. **Perfiles contables reutilizables**. Cada perfil define las cuentas de un tipo de compra (compra, existencia, variación, gasto, por pagar). Vienen 6 perfiles precargados.
+2. **Perfiles contables reutilizables**. Cada perfil define las cuentas de un tipo de compra (compra, existencia, variación, gasto, por pagar). Vienen 8 perfiles precargados (6 originales y, desde la versión 0.8.0, activo fijo de muebles y de maquinaria).
 3. **Categorías de artículo jerárquicas** que apuntan a un perfil. Si una subcategoría no define uno, **hereda** el de su categoría padre.
 4. **Artículo** con un tipo: bien inventariable, bien no inventariable, servicio o activo fijo. Sus cuentas salen de la categoría. Solo el permiso `maestros.articulo.excepcion_contable` permite asignarle otro perfil.
 5. **Centros de costo** ligados a una unidad de negocio.
@@ -38,7 +38,7 @@ Un artículo no se puede guardar si su perfil no se resuelve o si el tipo del pe
 
 ## Consecuencias
 
-- **Despliegue rápido:** una empresa nueva queda operativa con la plantilla y los 6 perfiles; el contador solo ajusta.
+- **Despliegue rápido:** una empresa nueva queda operativa con la plantilla, los perfiles y las categorías de ejemplo ya asignadas; el contador solo ajusta.
 - **Mantenible:** cambiar un perfil actualiza todas las categorías que lo usan. El PCGE 2026 se agrega como plantilla nueva (`PCGE-2026`) sin tocar el núcleo.
 - **Multipaís:** cada país aporta su plantilla en el paquete de localización (`pe`, `co`…); el modelo es el mismo.
 - **2027:** Contabilidad generará los asientos reales con la misma regla y la combinación ya guardada en cada línea; no hay rediseño.

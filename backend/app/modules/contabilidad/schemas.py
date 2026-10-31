@@ -123,3 +123,32 @@ class ImpuestoCambio(BaseModel):
 
 class PlantillaResultado(BaseModel):
     cuentas: int
+
+
+class PerfilResumen(Esquema):
+    id: uuid.UUID
+    codigo: str
+    nombre: str
+    tipo_articulo: str
+
+
+class CategoriaOrigen(Esquema):
+    id: uuid.UUID
+    codigo: str
+    nombre: str
+
+
+class CategoriaPerfilSalida(BaseModel):
+    categoria_id: uuid.UUID
+    perfil_propio: PerfilResumen | None
+    perfil_efectivo: PerfilResumen | None
+    heredado_de: CategoriaOrigen | None
+
+
+class CategoriaPerfilCambio(BaseModel):
+    perfil_id: uuid.UUID | None  # null = quitar el perfil propio y heredar del padre
+
+
+class SugeridosResultado(BaseModel):
+    perfiles: int
+    categorias: int
