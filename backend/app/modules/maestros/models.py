@@ -6,11 +6,13 @@ from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
+    Column,
     Date,
     ForeignKey,
     Integer,
     Numeric,
     String,
+    Table,
     UniqueConstraint,
     Uuid,
 )
@@ -118,3 +120,92 @@ class Categoria(ConAuditoria, Base):
     )
     nivel: Mapped[int] = mapped_column(Integer)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CondicionPago(ConAuditoria, Base):
+    """Contado, 30 días… La orden de compra la toma del proveedor por defecto."""
+
+    __tablename__ = "mae_condicion_pago"
+
+    codigo: Mapped[str] = mapped_column(String(20), unique=True)
+    nombre: Mapped[str] = mapped_column(String(80))
+    dias: Mapped[int] = mapped_column(Integer, default=0)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+mae_proveedor_categoria = Table(
+    "mae_proveedor_categoria",
+    Base.metadata,
+    Column(
+        "proveedor_id", Uuid, ForeignKey("mae_proveedor.id", ondelete="CASCADE"), primary_key=True
+    ),
+    Column("categoria_id", Uuid, ForeignKey("mae_categoria.id"), primary_key=True),
+)
+
+
+class Proveedor(ConAuditoria, Base):
+    """Proveedor compartido por todas las empresas; cada empresa puede bloquearlo para sí."""
+
+    __tablename__ = "mae_proveedor"
+    __table_args__ = (UniqueConstraint("pais", "tipo_documento", "numero_documento"),)
+
+    tipo_documento: Mapped[str] = mapped_column(String(5))  # RUC, DNI, EXT
+    numero_documento: Mapped[str] = mapped_column(String(20), index=True)
+    pais: Mapped[str] = mapped_column(String(2))  # país del proveedor (ISO 3166-1, minúsculas)
+    razon_social: Mapped[str] = mapped_column(String(200), index=True)
+    nombre_comercial: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    direccion: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    correo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    telefono: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    moneda: Mapped[str] = mapped_column(ForeignKey("mae_moneda.codigo"))
+    condicion_pago_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_condicion_pago.id"))
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    condicion_pago: Mapped[CondicionPago] = relationship(lazy="joined")
+    contactos: Mapped[list["ContactoProveedor"]] = relationship(
+        lazy="selectin", order_by="ContactoProveedor.nombre", cascade="all, delete-orphan"
+    )
+    cuentas: Mapped[list["CuentaBancariaProveedor"]] = relationship(
+        lazy="selectin", order_by="CuentaBancariaProveedor.creado_en", cascade="all, delete-orphan"
+    )
+    categorias: Mapped[list[Categoria]] = relationship(
+        secondary=mae_proveedor_categoria, lazy="selectin", order_by="Categoria.codigo"
+    )
+    bloqueos: Mapped[list["BloqueoProveedor"]] = relationship(
+        lazy="selectin", cascade="all, delete-orphan"
+    )
+
+
+class ContactoProveedor(ConAuditoria, Base):
+    __tablename__ = "mae_proveedor_contacto"
+
+    proveedor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_proveedor.id"), index=True)
+    nombre: Mapped[str] = mapped_column(String(150))
+    cargo: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    correo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    telefono: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    principal: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class CuentaBancariaProveedor(ConAuditoria, Base):
+    __tablename__ = "mae_proveedor_cuenta"
+
+    proveedor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_proveedor.id"), index=True)
+    banco: Mapped[str] = mapped_column(String(100))
+    tipo: Mapped[str] = mapped_column(String(20))  # corriente, ahorros, detracciones
+    moneda: Mapped[str] = mapped_column(ForeignKey("mae_moneda.codigo"))
+    numero: Mapped[str] = mapped_column(String(34))
+    cci: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    swift: Mapped[str | None] = mapped_column(String(11), nullable=True)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class BloqueoProveedor(ConAuditoria, Base):
+    """Una empresa no compra a este proveedor. Sin fila, el proveedor está habilitado."""
+
+    __tablename__ = "mae_proveedor_bloqueo"
+    __table_args__ = (UniqueConstraint("proveedor_id", "empresa_id"),)
+
+    proveedor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_proveedor.id"), index=True)
+    empresa_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_empresa.id"))
+    motivo: Mapped[str] = mapped_column(String(300))

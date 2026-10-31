@@ -16,3 +16,24 @@ def validar_ruc(ruc: str) -> str | None:
     if verificador != int(ruc[10]):
         return "El RUC no es válido (dígito verificador incorrecto)"
     return None
+
+
+def validar_dni(dni: str) -> str | None:
+    if len(dni) != 8 or not dni.isdigit():
+        return "El DNI debe tener 8 dígitos"
+    return None
+
+
+def validar_cci(cci: str) -> str | None:
+    """Código de Cuenta Interbancario: 20 dígitos."""
+    if len(cci) != 20 or not cci.isdigit():
+        return "El CCI debe tener 20 dígitos"
+    return None
+
+
+# Tipos de documento de identidad de un proveedor domiciliado en Perú.
+# (código, nombre, código SUNAT Catálogo N.° 06, validador)
+TIPOS_DOCUMENTO = [
+    ("RUC", "RUC", "6", validar_ruc),
+    ("DNI", "DNI", "1", validar_dni),
+]

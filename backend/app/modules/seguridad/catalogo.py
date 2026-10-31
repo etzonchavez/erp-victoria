@@ -61,6 +61,16 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("maestros.unidad.editar", "Crear y editar unidades de medida y conversiones"),
     PermisoDef("maestros.categoria.ver", "Ver el árbol de categorías de artículo"),
     PermisoDef("maestros.categoria.editar", "Crear, mover y editar categorías de artículo"),
+    PermisoDef("maestros.proveedor.ver", "Ver proveedores (las cuentas bancarias, enmascaradas)"),
+    PermisoDef("maestros.proveedor.crear", "Registrar proveedores"),
+    PermisoDef(
+        "maestros.proveedor.editar", "Editar proveedores, sus contactos y categorías; bloquearlos"
+    ),
+    PermisoDef(
+        "maestros.proveedor.banco",
+        "Ver completas, registrar y cambiar las cuentas bancarias de los proveedores",
+    ),
+    PermisoDef("maestros.condicion_pago.editar", "Crear y editar condiciones de pago"),
     # Contabilidad base (ADR-004)
     PermisoDef("contabilidad.cuenta.ver", "Ver el plan de cuentas"),
     PermisoDef(
@@ -192,6 +202,8 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.unidad.editar",
             "maestros.categoria.ver",
             "maestros.categoria.editar",
+            "maestros.proveedor.ver",
+            "maestros.condicion_pago.editar",
         ],
     ),
     RolDef(
@@ -199,13 +211,16 @@ ROLES_ESTANDAR: list[RolDef] = [
         "maestros",
         "Analista de maestros",
         "operativo",
-        "Registra el tipo de cambio diario y consulta los maestros.",
+        "Registra proveedores y el tipo de cambio diario; consulta los demás maestros.",
         [
             "maestros.empresa.ver",
             "maestros.moneda.ver",
             "maestros.tipo_cambio.registrar",
             "maestros.unidad.ver",
             "maestros.categoria.ver",
+            "maestros.proveedor.ver",
+            "maestros.proveedor.crear",
+            "maestros.proveedor.editar",
         ],
     ),
     RolDef(
@@ -219,6 +234,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.moneda.ver",
             "maestros.unidad.ver",
             "maestros.categoria.ver",
+            "maestros.proveedor.ver",
         ],
     ),
     RolDef(

@@ -1,6 +1,6 @@
 # Maestros
 
-**Versión:** 0.8.0 · **Estado:** empresas, monedas, tipo de cambio, unidades y categorías disponibles; artículos y proveedores en construcción (Semana 3)
+**Versión:** 0.9.0 · **Estado:** empresas, monedas, tipo de cambio, unidades, categorías y proveedores disponibles; artículos en construcción (Semana 3)
 
 ## 1. Objetivo del módulo
 
@@ -12,7 +12,7 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | --- | --- | --- |
 | `ERP_MAE_ADMINISTRADOR` | administrador | Responsable de datos maestros |
 | `ERP_MAE_CONFIGURADOR` | configuracion | Configura empresas, unidades de negocio, monedas y unidades de medida |
-| `ERP_MAE_ANALISTA` | operativo | Registra el tipo de cambio diario; más adelante, proveedores y artículos |
+| `ERP_MAE_ANALISTA` | operativo | Registra proveedores y el tipo de cambio diario; más adelante, artículos |
 | `ERP_MAE_CONSULTA` | consulta | Solo consulta |
 
 | Permiso | Permite |
@@ -21,7 +21,9 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | `maestros.moneda.ver` / `.editar` | Ver monedas y tipos de cambio / activar y editar monedas |
 | `maestros.tipo_cambio.registrar` | Registrar o corregir el tipo de cambio de una fecha |
 | `maestros.unidad.ver` / `.editar` | Unidades de medida y conversiones generales |
-| `maestros.proveedor.ver` / `.crear` / `.editar` | Proveedores |
+| `maestros.proveedor.ver` / `.crear` / `.editar` | Ver (cuentas bancarias enmascaradas) / registrar / editar proveedores, sus contactos y categorías, y bloquearlos por empresa |
+| `maestros.proveedor.banco` | Ver completas, registrar y desactivar las cuentas bancarias de los proveedores. **No viene en ningún rol estándar salvo el administrador de maestros**: asígnalo solo a tesorería |
+| `maestros.condicion_pago.editar` | Condiciones de pago |
 | `maestros.categoria.ver` / `.editar` | Ver / crear, mover y editar el árbol de categorías (el perfil contable lo asigna Contabilidad) |
 | `maestros.articulo.ver` / `.crear` / `.editar` | Artículos |
 | `maestros.articulo.excepcion_contable` | Asignar a un artículo un perfil distinto al de su categoría (solo roles contables) |
@@ -129,7 +131,31 @@ Vienen precargadas 20 unidades de uso común. **Conversiones generales** (1 KG =
 
 ### Proveedores
 
-Se detallan al construirlos (Semana 3, tarea 4).
+Los proveedores son **compartidos por todas las empresas**: un mismo documento se registra una sola vez. Cada empresa puede **bloquear** a un proveedor para sí, con un motivo; una empresa bloqueada no podrá emitirle órdenes de compra.
+
+| Campo | Regla |
+| --- | --- |
+| Tipo y número de documento | **RUC** (11 dígitos con dígito verificador), **DNI** (8 dígitos) o **identificación tributaria del exterior** (3 a 20 letras o números, con el país del proveedor). Único; no cambia |
+| País | Perú para RUC y DNI; el del proveedor (código de 2 letras) para los del exterior |
+| Razón social | Obligatoria |
+| Nombre comercial, dirección, correo, teléfono | Opcionales; el correo se valida |
+| Moneda habitual | Por defecto PEN para proveedores locales y USD para los del exterior |
+| Condición de pago | Por defecto Contado. La orden de compra tomará la moneda y la condición del proveedor |
+| Activo | Un proveedor inactivo no recibe órdenes de compra |
+
+**Contactos.** Nombre, cargo, correo y teléfono. Siempre hay un **contacto principal** (el primero que se registra), que recibirá las órdenes de compra; para cambiarlo se marca otro como principal.
+
+**Cuentas bancarias.** Banco, tipo (corriente, ahorros o detracciones), moneda y número.
+
+- Cuentas en Perú: el **CCI de 20 dígitos** es obligatorio. Cuentas del exterior: el **SWIFT/BIC** es obligatorio.
+- Por seguridad (el cambio de cuenta bancaria es una vía común de fraude), solo quien tiene `maestros.proveedor.banco` ve los números completos y registra o desactiva cuentas; los demás ven `•••• 1234`.
+- Las cuentas no se editan: se desactiva la anterior y se registra la nueva. La auditoría guarda cada cambio sin el número completo.
+
+**Categorías que provee.** Las categorías de artículo que vende el proveedor; servirán para sugerirlo al comprar.
+
+### Condiciones de pago
+
+Vienen precargadas: Contado, Crédito 15, 30, 45 y 60 días. Se pueden crear otras (código, nombre y días de crédito). No se desactiva una condición mientras la use algún proveedor activo.
 
 ## 5. Reglas de negocio
 
@@ -153,6 +179,8 @@ La plantilla contable, los impuestos y las unidades de medida precargadas vienen
 ## 9. Preguntas frecuentes
 
 **¿El usuario de compras tiene que saber de cuentas contables?** No. Elige el artículo; la cuenta sale de la categoría.
+
+**Un proveedor nos falló en una sola empresa del grupo, ¿lo desactivo?** No: bloquéalo solo para esa empresa, con el motivo. Las demás pueden seguir comprándole.
 
 **Tenemos dos empresas: ¿debo crear las categorías dos veces?** No. El árbol es uno solo; el contador de cada empresa asigna su perfil contable.
 

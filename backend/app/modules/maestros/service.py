@@ -5,18 +5,23 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ErrorERP, no_encontrado
 from app.core.eventos import emitir
-from app.localizacion import PAISES, pais
+from app.localizacion import PAISES, TIPO_EXTRANJERO, pais
 from app.modules.maestros import datos_base
 from app.modules.maestros.models import (
+    BloqueoProveedor,
     Categoria,
+    CondicionPago,
+    ContactoProveedor,
     ConversionUnidad,
+    CuentaBancariaProveedor,
     Empresa,
     Moneda,
+    Proveedor,
     TipoCambio,
     UnidadMedida,
     UnidadNegocio,
@@ -73,6 +78,10 @@ def preparar(db: Session) -> None:
     for origen, destino, factor in datos_base.CONVERSIONES:
         if (origen, destino) not in conversiones:
             db.add(ConversionUnidad(origen=origen, destino=destino, factor=factor))
+    condiciones = set(db.scalars(select(CondicionPago.codigo)))
+    for codigo, nombre, dias in datos_base.CONDICIONES_PAGO:
+        if codigo not in condiciones:
+            db.add(CondicionPago(codigo=codigo, nombre=nombre, dias=dias))
     categorias = {c.codigo: c for c in db.scalars(select(Categoria))}
     for codigo, nombre, padre in datos_base.CATEGORIAS:
         if codigo not in categorias:
@@ -708,3 +717,531 @@ def cambiar_categoria(
         auditar(db, actor, "editar", "categoria", cat.id, {"codigo": cat.codigo, **detalle})
         db.commit()
     return cat
+
+
+# ---------------------------------------------------------------- condiciones de pago
+
+CODIGO_CONDICION = re.compile(r"^[A-Z0-9_-]{1,20}$")
+
+
+def listar_condiciones(db: Session) -> list[CondicionPago]:
+    return list(
+        db.scalars(select(CondicionPago).order_by(CondicionPago.dias, CondicionPago.codigo))
+    )
+
+
+def obtener_condicion(db: Session, condicion_id: uuid.UUID) -> CondicionPago:
+    c = db.get(CondicionPago, condicion_id)
+    if not c:
+        raise no_encontrado("La condición de pago")
+    return c
+
+
+def crear_condicion(
+    db: Session, actor: Usuario, codigo: str, nombre: str, dias: int
+) -> CondicionPago:
+    codigo = codigo.strip().upper()
+    if not CODIGO_CONDICION.match(codigo):
+        raise ErrorERP(422, "codigo_invalido", "El código usa mayúsculas, números, - o _")
+    if db.scalar(select(CondicionPago.id).where(CondicionPago.codigo == codigo)):
+        raise ErrorERP(409, "condicion_duplicada", f"Ya existe la condición de pago {codigo}")
+    c = CondicionPago(
+        codigo=codigo,
+        nombre=nombre.strip(),
+        dias=dias,
+        creado_por=actor.id,
+        actualizado_por=actor.id,
+    )
+    db.add(c)
+    db.flush()
+    auditar(db, actor, "crear", "condicion_pago", c.id, {"codigo": codigo, "dias": dias})
+    db.commit()
+    return c
+
+
+def cambiar_condicion(
+    db: Session, actor: Usuario, condicion_id: uuid.UUID, cambios: dict
+) -> CondicionPago:
+    c = obtener_condicion(db, condicion_id)
+    if cambios.get("activo") is False and c.activo:
+        en_uso = db.scalar(
+            select(func.count())
+            .select_from(Proveedor)
+            .where(Proveedor.condicion_pago_id == c.id, Proveedor.activo.is_(True))
+        )
+        if en_uso:
+            raise ErrorERP(
+                409,
+                "condicion_en_uso",
+                f"{en_uso} proveedor(es) activo(s) usan {c.nombre}; cámbiales la condición primero",
+            )
+    if cambios.get("nombre"):
+        cambios["nombre"] = cambios["nombre"].strip()
+    detalle = _cambios(c, cambios, ("nombre", "dias", "activo"))
+    if detalle:
+        c.actualizado_por = actor.id
+        auditar(db, actor, "editar", "condicion_pago", c.id, {"codigo": c.codigo, **detalle})
+        db.commit()
+    return c
+
+
+# ---------------------------------------------------------------- proveedores
+
+DOCUMENTO_EXTRANJERO = re.compile(r"^[A-Z0-9][A-Z0-9.-]{2,19}$")
+CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+SWIFT = re.compile(r"^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$")
+PAIS_LOCAL = "pe"  # país donde opera hoy Victoria ERP (los demás proveedores son del exterior)
+
+
+def tipos_documento() -> list[dict]:
+    p = pais(PAIS_LOCAL)
+    locales = [
+        {"codigo": c, "nombre": n, "codigo_oficial": o, "extranjero": False}
+        for c, n, o, _ in p.tipos_documento
+    ]
+    codigo, nombre, oficial = TIPO_EXTRANJERO
+    return locales + [
+        {"codigo": codigo, "nombre": nombre, "codigo_oficial": oficial, "extranjero": True}
+    ]
+
+
+def _validar_documento(tipo: str, numero: str, pais_proveedor: str) -> tuple[str, str]:
+    """Devuelve (número normalizado, país). Valida según el tipo de documento."""
+    numero = re.sub(r"\s", "", numero).upper()
+    if tipo == TIPO_EXTRANJERO[0]:
+        pais_proveedor = (pais_proveedor or "").lower()
+        if not re.fullmatch(r"[a-z]{2}", pais_proveedor) or pais_proveedor == PAIS_LOCAL:
+            raise ErrorERP(
+                422,
+                "pais_invalido",
+                "Un proveedor del exterior necesita su país (código de 2 letras distinto de PE)",
+            )
+        if not DOCUMENTO_EXTRANJERO.match(numero):
+            raise ErrorERP(
+                422,
+                "documento_invalido",
+                "La identificación tributaria del exterior tiene de 3 a 20 letras, números, . o -",
+            )
+        return numero, pais_proveedor
+    local = {c: v for c, _, _, v in pais(PAIS_LOCAL).tipos_documento}
+    if tipo not in local:
+        raise ErrorERP(
+            422,
+            "tipo_documento_invalido",
+            f"Tipo de documento no válido: {', '.join([*local, 'EXT'])}",
+        )
+    motivo = local[tipo](numero)
+    if motivo:
+        raise ErrorERP(422, "documento_invalido", motivo)
+    return numero, PAIS_LOCAL
+
+
+def _validar_correo(correo: str | None) -> str | None:
+    correo = (correo or "").strip().lower() or None
+    if correo and not CORREO.match(correo):
+        raise ErrorERP(422, "correo_invalido", f"El correo {correo} no es válido")
+    return correo
+
+
+def _texto(valor: str | None) -> str | None:
+    return (valor or "").strip() or None
+
+
+def buscar_proveedores(
+    db: Session, texto: str | None = None, solo_activos: bool = False, limite: int = 200
+) -> list[Proveedor]:
+    q = select(Proveedor).order_by(Proveedor.razon_social)
+    if texto:
+        patron = f"%{texto.strip()}%"
+        q = q.where(
+            Proveedor.razon_social.ilike(patron)
+            | Proveedor.nombre_comercial.ilike(patron)
+            | Proveedor.numero_documento.ilike(patron)
+        )
+    if solo_activos:
+        q = q.where(Proveedor.activo.is_(True))
+    return list(db.scalars(q.limit(min(limite, 500))))
+
+
+def obtener_proveedor(db: Session, proveedor_id: uuid.UUID) -> Proveedor:
+    p = db.get(Proveedor, proveedor_id)
+    if not p:
+        raise no_encontrado("El proveedor")
+    return p
+
+
+def crear_proveedor(db: Session, actor: Usuario, datos: dict) -> Proveedor:
+    tipo = datos["tipo_documento"].upper()
+    numero, pais_proveedor = _validar_documento(tipo, datos["numero_documento"], datos.get("pais"))
+    existente = db.scalar(
+        select(Proveedor).where(
+            Proveedor.pais == pais_proveedor,
+            Proveedor.tipo_documento == tipo,
+            Proveedor.numero_documento == numero,
+        )
+    )
+    if existente:
+        raise ErrorERP(
+            409,
+            "proveedor_duplicado",
+            f"El proveedor {tipo} {numero} ya existe: {existente.razon_social}",
+        )
+    extranjero = tipo == TIPO_EXTRANJERO[0]
+    moneda = obtener_moneda(db, datos.get("moneda") or ("USD" if extranjero else "PEN"))
+    if not moneda.activo:
+        raise ErrorERP(422, "moneda_inactiva", f"La moneda {moneda.codigo} está inactiva")
+    condicion = (
+        obtener_condicion(db, datos["condicion_pago_id"])
+        if datos.get("condicion_pago_id")
+        else db.scalar(select(CondicionPago).where(CondicionPago.codigo == "CONTADO"))
+    )
+    if not condicion or not condicion.activo:
+        raise ErrorERP(422, "condicion_inactiva", "Elige una condición de pago activa")
+    prov = Proveedor(
+        tipo_documento=tipo,
+        numero_documento=numero,
+        pais=pais_proveedor,
+        razon_social=datos["razon_social"].strip(),
+        nombre_comercial=_texto(datos.get("nombre_comercial")),
+        direccion=_texto(datos.get("direccion")),
+        correo=_validar_correo(datos.get("correo")),
+        telefono=_texto(datos.get("telefono")),
+        moneda=moneda.codigo,
+        condicion_pago_id=condicion.id,
+        creado_por=actor.id,
+        actualizado_por=actor.id,
+    )
+    db.add(prov)
+    db.flush()
+    auditar(
+        db,
+        actor,
+        "crear",
+        "proveedor",
+        prov.id,
+        {
+            "documento": f"{tipo} {numero}",
+            "pais": pais_proveedor,
+            "razon_social": prov.razon_social,
+        },
+    )
+    db.commit()
+    db.refresh(prov)
+    return prov
+
+
+def cambiar_proveedor(
+    db: Session, actor: Usuario, proveedor_id: uuid.UUID, cambios: dict
+) -> Proveedor:
+    """El documento y el país no cambian: identifican al proveedor ante el fisco."""
+    prov = obtener_proveedor(db, proveedor_id)
+    if "correo" in cambios:
+        cambios["correo"] = _validar_correo(cambios["correo"])
+    for campo in ("nombre_comercial", "direccion", "telefono"):
+        if campo in cambios:
+            cambios[campo] = _texto(cambios[campo])
+    if cambios.get("razon_social"):
+        cambios["razon_social"] = cambios["razon_social"].strip()
+    if "moneda" in cambios:
+        moneda = obtener_moneda(db, cambios["moneda"])
+        if not moneda.activo:
+            raise ErrorERP(422, "moneda_inactiva", f"La moneda {moneda.codigo} está inactiva")
+        cambios["moneda"] = moneda.codigo
+    if (
+        "condicion_pago_id" in cambios
+        and not obtener_condicion(db, cambios["condicion_pago_id"]).activo
+    ):
+        raise ErrorERP(422, "condicion_inactiva", "Elige una condición de pago activa")
+    campos = (
+        "razon_social",
+        "nombre_comercial",
+        "direccion",
+        "correo",
+        "telefono",
+        "moneda",
+        "condicion_pago_id",
+        "activo",
+    )
+    detalle = _cambios(prov, cambios, campos)
+    if detalle:
+        prov.actualizado_por = actor.id
+        auditar(
+            db,
+            actor,
+            "editar",
+            "proveedor",
+            prov.id,
+            {"documento": prov.numero_documento, **detalle},
+        )
+        db.commit()
+        db.refresh(prov)
+    return prov
+
+
+# contactos
+
+
+def _quitar_principal(prov: Proveedor, excepto: ContactoProveedor | None = None) -> None:
+    for c in prov.contactos:
+        if c is not excepto:
+            c.principal = False
+
+
+def crear_contacto(
+    db: Session, actor: Usuario, proveedor_id: uuid.UUID, datos: dict
+) -> ContactoProveedor:
+    prov = obtener_proveedor(db, proveedor_id)
+    contacto = ContactoProveedor(
+        proveedor_id=prov.id,
+        nombre=datos["nombre"].strip(),
+        cargo=_texto(datos.get("cargo")),
+        correo=_validar_correo(datos.get("correo")),
+        telefono=_texto(datos.get("telefono")),
+        # El primer contacto es el principal: recibe las órdenes de compra.
+        principal=bool(datos.get("principal")) or not prov.contactos,
+        creado_por=actor.id,
+        actualizado_por=actor.id,
+    )
+    if contacto.principal:
+        _quitar_principal(prov)
+    prov.contactos.append(contacto)
+    db.flush()
+    auditar(
+        db,
+        actor,
+        "crear",
+        "proveedor_contacto",
+        contacto.id,
+        {
+            "proveedor": prov.razon_social,
+            "nombre": contacto.nombre,
+            "principal": contacto.principal,
+        },
+    )
+    db.commit()
+    return contacto
+
+
+def _obtener_contacto(db: Session, contacto_id: uuid.UUID) -> ContactoProveedor:
+    c = db.get(ContactoProveedor, contacto_id)
+    if not c:
+        raise no_encontrado("El contacto")
+    return c
+
+
+def cambiar_contacto(
+    db: Session, actor: Usuario, contacto_id: uuid.UUID, cambios: dict
+) -> ContactoProveedor:
+    contacto = _obtener_contacto(db, contacto_id)
+    prov = obtener_proveedor(db, contacto.proveedor_id)
+    if "correo" in cambios:
+        cambios["correo"] = _validar_correo(cambios["correo"])
+    for campo in ("cargo", "telefono"):
+        if campo in cambios:
+            cambios[campo] = _texto(cambios[campo])
+    if cambios.get("nombre"):
+        cambios["nombre"] = cambios["nombre"].strip()
+    if cambios.get("principal") is False and contacto.principal:
+        raise ErrorERP(
+            422, "principal_requerido", "Marca otro contacto como principal en lugar de quitarlo"
+        )
+    if cambios.get("principal") is True:
+        _quitar_principal(prov, excepto=contacto)
+    detalle = _cambios(contacto, cambios, ("nombre", "cargo", "correo", "telefono", "principal"))
+    if detalle:
+        contacto.actualizado_por = actor.id
+        auditar(
+            db,
+            actor,
+            "editar",
+            "proveedor_contacto",
+            contacto.id,
+            {"proveedor": prov.razon_social, **detalle},
+        )
+        db.commit()
+    return contacto
+
+
+def eliminar_contacto(db: Session, actor: Usuario, contacto_id: uuid.UUID) -> None:
+    contacto = _obtener_contacto(db, contacto_id)
+    prov = obtener_proveedor(db, contacto.proveedor_id)
+    prov.contactos.remove(contacto)
+    if contacto.principal and prov.contactos:
+        prov.contactos[0].principal = True
+    auditar(
+        db,
+        actor,
+        "eliminar",
+        "proveedor_contacto",
+        contacto.id,
+        {"proveedor": prov.razon_social, "nombre": contacto.nombre},
+    )
+    db.commit()
+
+
+# cuentas bancarias (permiso especial: un cambio de cuenta es una vía común de fraude)
+
+
+def crear_cuenta_bancaria(
+    db: Session, actor: Usuario, proveedor_id: uuid.UUID, datos: dict
+) -> CuentaBancariaProveedor:
+    prov = obtener_proveedor(db, proveedor_id)
+    if datos["tipo"] not in datos_base.TIPOS_CUENTA_BANCARIA:
+        raise ErrorERP(
+            422,
+            "tipo_invalido",
+            f"Tipo de cuenta no válido: {', '.join(datos_base.TIPOS_CUENTA_BANCARIA)}",
+        )
+    moneda = obtener_moneda(db, datos["moneda"])
+    numero = re.sub(r"[\s-]", "", datos["numero"]).upper()
+    if not re.fullmatch(r"[A-Z0-9]{5,34}", numero):
+        raise ErrorERP(
+            422, "numero_invalido", "El número de cuenta tiene de 5 a 34 letras o dígitos"
+        )
+    cci = re.sub(r"[\s-]", "", datos.get("cci") or "") or None
+    swift = re.sub(r"\s", "", datos.get("swift") or "").upper() or None
+    local = pais(PAIS_LOCAL)
+    if prov.pais == PAIS_LOCAL:
+        if not cci:
+            raise ErrorERP(422, "cci_requerido", "Las cuentas en Perú necesitan el CCI")
+        motivo = local.validar_cuenta_interbancaria(cci)
+        if motivo:
+            raise ErrorERP(422, "cci_invalido", motivo)
+    elif not swift:
+        raise ErrorERP(
+            422, "swift_requerido", "Las cuentas del exterior necesitan el código SWIFT/BIC"
+        )
+    if swift and not SWIFT.match(swift):
+        raise ErrorERP(422, "swift_invalido", "El SWIFT/BIC tiene 8 u 11 caracteres (ej. BCPLPEPL)")
+    if any(c.numero == numero and c.activo for c in prov.cuentas):
+        raise ErrorERP(409, "cuenta_duplicada", "Esa cuenta ya está registrada")
+    cuenta = CuentaBancariaProveedor(
+        proveedor_id=prov.id,
+        banco=datos["banco"].strip(),
+        tipo=datos["tipo"],
+        moneda=moneda.codigo,
+        numero=numero,
+        cci=cci,
+        swift=swift,
+        creado_por=actor.id,
+        actualizado_por=actor.id,
+    )
+    prov.cuentas.append(cuenta)
+    db.flush()
+    auditar(
+        db,
+        actor,
+        "crear",
+        "proveedor_cuenta",
+        cuenta.id,
+        {
+            "proveedor": prov.razon_social,
+            "banco": cuenta.banco,
+            "moneda": cuenta.moneda,
+            "cuenta": enmascarar(numero),
+        },
+    )
+    db.commit()
+    return cuenta
+
+
+def cambiar_cuenta_bancaria(
+    db: Session, actor: Usuario, cuenta_id: uuid.UUID, activo: bool
+) -> CuentaBancariaProveedor:
+    """Las cuentas no se editan: se desactiva la anterior y se registra la nueva."""
+    cuenta = db.get(CuentaBancariaProveedor, cuenta_id)
+    if not cuenta:
+        raise no_encontrado("La cuenta bancaria")
+    if cuenta.activo != activo:
+        cuenta.activo, cuenta.actualizado_por = activo, actor.id
+        prov = obtener_proveedor(db, cuenta.proveedor_id)
+        auditar(
+            db,
+            actor,
+            "activar" if activo else "desactivar",
+            "proveedor_cuenta",
+            cuenta.id,
+            {"proveedor": prov.razon_social, "cuenta": enmascarar(cuenta.numero)},
+        )
+        db.commit()
+    return cuenta
+
+
+def enmascarar(valor: str | None) -> str | None:
+    return f"•••• {valor[-4:]}" if valor else None
+
+
+# categorías que provee y bloqueo por empresa
+
+
+def asignar_categorias(
+    db: Session, actor: Usuario, proveedor_id: uuid.UUID, categoria_ids: list[uuid.UUID]
+) -> Proveedor:
+    prov = obtener_proveedor(db, proveedor_id)
+    nuevas = [obtener_categoria(db, c) for c in dict.fromkeys(categoria_ids)]
+    antes = sorted(c.codigo for c in prov.categorias)
+    despues = sorted(c.codigo for c in nuevas)
+    if antes != despues:
+        prov.categorias = nuevas
+        prov.actualizado_por = actor.id
+        auditar(
+            db,
+            actor,
+            "editar",
+            "proveedor",
+            prov.id,
+            {"categorias": {"antes": antes, "despues": despues}},
+        )
+        db.commit()
+        db.refresh(prov)
+    return prov
+
+
+def bloquear_proveedor(
+    db: Session,
+    actor: Usuario,
+    proveedor_id: uuid.UUID,
+    empresa_id: uuid.UUID,
+    bloqueado: bool,
+    motivo: str | None,
+) -> Proveedor:
+    prov = obtener_proveedor(db, proveedor_id)
+    empresa = obtener_empresa(db, empresa_id)
+    actual = next((b for b in prov.bloqueos if b.empresa_id == empresa.id), None)
+    if bloqueado and not actual:
+        motivo = _texto(motivo)
+        if not motivo:
+            raise ErrorERP(422, "motivo_requerido", "Indica el motivo del bloqueo")
+        prov.bloqueos.append(
+            BloqueoProveedor(
+                proveedor_id=prov.id,
+                empresa_id=empresa.id,
+                motivo=motivo,
+                creado_por=actor.id,
+                actualizado_por=actor.id,
+            )
+        )
+    elif not bloqueado and actual:
+        prov.bloqueos.remove(actual)
+    else:
+        return prov
+    auditar(
+        db,
+        actor,
+        "bloquear" if bloqueado else "desbloquear",
+        "proveedor",
+        prov.id,
+        {"empresa": empresa.razon_social, "motivo": motivo if bloqueado else actual.motivo},
+    )
+    db.commit()
+    db.refresh(prov)
+    return prov
+
+
+def proveedor_habilitado(db: Session, proveedor_id: uuid.UUID, empresa_id: uuid.UUID) -> str | None:
+    """None si la empresa puede comprarle; si no, el motivo. Lo usarán las órdenes de compra."""
+    prov = obtener_proveedor(db, proveedor_id)
+    if not prov.activo:
+        return "El proveedor está inactivo"
+    bloqueo = next((b for b in prov.bloqueos if b.empresa_id == empresa_id), None)
+    return f"Proveedor bloqueado para esta empresa: {bloqueo.motivo}" if bloqueo else None

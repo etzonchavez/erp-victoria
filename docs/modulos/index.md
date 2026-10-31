@@ -14,7 +14,7 @@ Cada módulo se documenta con esta plantilla:
 | Módulo | Documentación |
 | --- | --- |
 | Seguridad | [Disponible](seguridad.md) |
-| Maestros | [Parcial: empresas, monedas, unidades, categorías](maestros.md) · Semana 3 |
+| Maestros | [Parcial: empresas, monedas, unidades, categorías, proveedores](maestros.md) · Semana 3 |
 | Contabilidad base | [Disponible](contabilidad.md) |
 | Solicitudes de compra | Semana 4 |
 | Compras | Semana 5 |

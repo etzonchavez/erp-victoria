@@ -70,3 +70,18 @@ CATEGORIAS = [
     ("AF-MUE", "Muebles y enseres", "AF"),
     ("AF-MAQ", "Maquinaria y equipo", "AF"),
 ]
+
+# (código, nombre, días)
+CONDICIONES_PAGO = [
+    ("CONTADO", "Contado", 0),
+    ("15D", "Crédito 15 días", 15),
+    ("30D", "Crédito 30 días", 30),
+    ("45D", "Crédito 45 días", 45),
+    ("60D", "Crédito 60 días", 60),
+]
+
+TIPOS_CUENTA_BANCARIA = {
+    "corriente": "Cuenta corriente",
+    "ahorros": "Cuenta de ahorros",
+    "detracciones": "Cuenta de detracciones",
+}

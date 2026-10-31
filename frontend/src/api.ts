@@ -87,6 +87,62 @@ export type CategoriaPerfil = {
   heredado_de: { id: string; codigo: string; nombre: string } | null;
 };
 
+// Proveedores
+export type CondicionPago = { id: string; codigo: string; nombre: string; dias: number; activo: boolean };
+export type TipoDocumento = { codigo: string; nombre: string; codigo_oficial: string; extranjero: boolean };
+export type ContactoProveedor = {
+  id: string;
+  nombre: string;
+  cargo: string | null;
+  correo: string | null;
+  telefono: string | null;
+  principal: boolean;
+};
+export type CuentaBancaria = {
+  id: string;
+  banco: string;
+  tipo: string;
+  moneda: string;
+  numero: string;
+  cci: string | null;
+  swift: string | null;
+  activo: boolean;
+  enmascarada: boolean;
+};
+export type ProveedorResumen = {
+  id: string;
+  tipo_documento: string;
+  numero_documento: string;
+  pais: string;
+  razon_social: string;
+  nombre_comercial: string | null;
+  moneda: string;
+  condicion_pago: CondicionPago;
+  activo: boolean;
+  bloqueos: { empresa_id: string; motivo: string }[];
+};
+export type Proveedor = ProveedorResumen & {
+  direccion: string | null;
+  correo: string | null;
+  telefono: string | null;
+  contactos: ContactoProveedor[];
+  cuentas: CuentaBancaria[];
+  categorias: Categoria[];
+};
+export const NOMBRE_TIPO_CUENTA: Record<string, string> = {
+  corriente: "Corriente",
+  ahorros: "Ahorros",
+  detracciones: "Detracciones",
+};
+/** Nombre del país en español a partir del código ISO de 2 letras. */
+export const nombrePais = (codigo: string) => {
+  try {
+    return new Intl.DisplayNames(["es"], { type: "region" }).of(codigo.toUpperCase()) ?? codigo.toUpperCase();
+  } catch {
+    return codigo.toUpperCase();
+  }
+};
+
 export const NOMBRE_TIPO_ARTICULO: Record<string, string> = {
   bien_inventariable: "Bien inventariable",
   bien_no_inventariable: "Bien no inventariable",

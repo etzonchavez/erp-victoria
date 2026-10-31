@@ -21,9 +21,11 @@ class Pais:
     nombre_identificacion_fiscal: str  # RUC, NIT, RUT…
     validar_identificacion_fiscal: Callable[[str], str | None]  # motivo del error o None
     zona_horaria: str
-    plan_contable: Any = (
-        None  # módulo con PLANTILLA, NATURALEZA_POR_ELEMENTO, CUENTAS, PERFILES, IMPUESTOS
-    )
+    # Módulo con PLANTILLA, NATURALEZA_POR_ELEMENTO, CUENTAS, PERFILES, IMPUESTOS
+    plan_contable: Any = None
+    # Documentos de terceros locales: (código, nombre, código oficial, validador)
+    tipos_documento: tuple = ()
+    validar_cuenta_interbancaria: Callable[[str], str | None] | None = None
 
 
 PAISES: dict[str, Pais] = {
@@ -35,9 +37,15 @@ PAISES: dict[str, Pais] = {
         validar_identificacion_fiscal=pe.validar_ruc,
         zona_horaria="America/Lima",
         plan_contable=pe_plan,
+        tipos_documento=tuple(pe.TIPOS_DOCUMENTO),
+        validar_cuenta_interbancaria=pe.validar_cci,
     ),
 }
 
 
 def pais(codigo: str) -> Pais | None:
     return PAISES.get(codigo.lower())
+
+
+# Proveedor del exterior (no domiciliado): se identifica con su número tributario de origen.
+TIPO_EXTRANJERO = ("EXT", "Identificación tributaria del exterior", "0")

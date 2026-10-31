@@ -10,11 +10,22 @@ from app.core.database import get_db
 from app.localizacion import PAISES
 from app.modules.maestros import service
 from app.modules.maestros.schemas import (
+    BloqueoCambio,
     CategoriaCambio,
     CategoriaCrear,
     CategoriaSalida,
+    CategoriasCambio,
+    CondicionCambio,
+    CondicionCrear,
+    CondicionSalida,
+    ContactoCambio,
+    ContactoCrear,
+    ContactoSalida,
     ConversionCrear,
     ConversionSalida,
+    CuentaBancariaCambio,
+    CuentaBancariaCrear,
+    CuentaBancariaSalida,
     EmpresaCambio,
     EmpresaCrear,
     EmpresaResumen,
@@ -23,8 +34,13 @@ from app.modules.maestros.schemas import (
     MonedaCrear,
     MonedaSalida,
     PaisSalida,
+    ProveedorCambio,
+    ProveedorCrear,
+    ProveedorResumen,
+    ProveedorSalida,
     TipoCambioEntrada,
     TipoCambioSalida,
+    TipoDocumentoSalida,
     UnidadCambio,
     UnidadCrear,
     UnidadNegocioCambio,
@@ -32,6 +48,7 @@ from app.modules.maestros.schemas import (
     UnidadNegocioSalida,
     UnidadSalida,
 )
+from app.modules.seguridad import service as seguridad
 from app.modules.seguridad.deps import requiere, usuario_actual
 from app.modules.seguridad.models import Usuario
 
@@ -299,3 +316,214 @@ def cambiar_categoria(
         if cambios.get(campo, "") is None:
             cambios.pop(campo)
     return service.cambiar_categoria(db, actor, categoria_id, cambios)
+
+
+# ---------------------------------------------------------------- condiciones de pago
+
+
+@router.get(
+    "/condiciones-pago", response_model=list[CondicionSalida], summary="Condiciones de pago"
+)
+def condiciones(
+    _: Usuario = Depends(requiere("maestros.proveedor.ver")), db: Session = Depends(get_db)
+):
+    return service.listar_condiciones(db)
+
+
+@router.post(
+    "/condiciones-pago", response_model=CondicionSalida, status_code=201, summary="Crear condición"
+)
+def crear_condicion(
+    datos: CondicionCrear,
+    actor: Usuario = Depends(requiere("maestros.condicion_pago.editar")),
+    db: Session = Depends(get_db),
+):
+    return service.crear_condicion(db, actor, datos.codigo, datos.nombre, datos.dias)
+
+
+@router.patch(
+    "/condiciones-pago/{condicion_id}", response_model=CondicionSalida, summary="Editar condición"
+)
+def cambiar_condicion(
+    condicion_id: uuid.UUID,
+    datos: CondicionCambio,
+    actor: Usuario = Depends(requiere("maestros.condicion_pago.editar")),
+    db: Session = Depends(get_db),
+):
+    return service.cambiar_condicion(db, actor, condicion_id, _sin_nulos(datos))
+
+
+# ---------------------------------------------------------------- proveedores
+
+
+def _cuenta(cuenta, ve_banco: bool) -> CuentaBancariaSalida:
+    """Sin el permiso maestros.proveedor.banco, número y CCI salen enmascarados."""
+    salida = CuentaBancariaSalida.model_validate(cuenta)
+    if not ve_banco:
+        salida.numero = service.enmascarar(cuenta.numero)
+        salida.cci = service.enmascarar(cuenta.cci)
+        salida.enmascarada = True
+    return salida
+
+
+def _proveedor(prov, ve_banco: bool) -> ProveedorSalida:
+    salida = ProveedorSalida.model_validate(prov)
+    salida.cuentas = [_cuenta(c, ve_banco) for c in prov.cuentas]
+    return salida
+
+
+def _ve_banco(db: Session, usuario: Usuario) -> bool:
+    return "maestros.proveedor.banco" in seguridad.permisos_de(db, usuario)
+
+
+@router.get(
+    "/tipos-documento", response_model=list[TipoDocumentoSalida], summary="Documentos de proveedor"
+)
+def tipos_documento(_: Usuario = Depends(requiere("maestros.proveedor.ver"))):
+    return service.tipos_documento()
+
+
+@router.get("/proveedores", response_model=list[ProveedorResumen], summary="Buscar proveedores")
+def proveedores(
+    buscar: str | None = None,
+    solo_activos: bool = False,
+    _: Usuario = Depends(requiere("maestros.proveedor.ver")),
+    db: Session = Depends(get_db),
+):
+    return service.buscar_proveedores(db, buscar, solo_activos)
+
+
+@router.post(
+    "/proveedores", response_model=ProveedorSalida, status_code=201, summary="Registrar proveedor"
+)
+def crear_proveedor(
+    datos: ProveedorCrear,
+    actor: Usuario = Depends(requiere("maestros.proveedor.crear")),
+    db: Session = Depends(get_db),
+):
+    return _proveedor(service.crear_proveedor(db, actor, datos.model_dump()), _ve_banco(db, actor))
+
+
+@router.get("/proveedores/{proveedor_id}", response_model=ProveedorSalida, summary="Ficha")
+def proveedor(
+    proveedor_id: uuid.UUID,
+    usuario: Usuario = Depends(requiere("maestros.proveedor.ver")),
+    db: Session = Depends(get_db),
+):
+    return _proveedor(service.obtener_proveedor(db, proveedor_id), _ve_banco(db, usuario))
+
+
+@router.patch("/proveedores/{proveedor_id}", response_model=ProveedorSalida, summary="Editar")
+def cambiar_proveedor(
+    proveedor_id: uuid.UUID,
+    datos: ProveedorCambio,
+    actor: Usuario = Depends(requiere("maestros.proveedor.editar")),
+    db: Session = Depends(get_db),
+):
+    cambios = datos.model_dump(exclude_unset=True)
+    for campo in ("razon_social", "moneda", "condicion_pago_id", "activo"):
+        if cambios.get(campo, "") is None:
+            cambios.pop(campo)
+    prov = service.cambiar_proveedor(db, actor, proveedor_id, cambios)
+    return _proveedor(prov, _ve_banco(db, actor))
+
+
+@router.post(
+    "/proveedores/{proveedor_id}/contactos",
+    response_model=ContactoSalida,
+    status_code=201,
+    summary="Agregar contacto",
+)
+def crear_contacto(
+    proveedor_id: uuid.UUID,
+    datos: ContactoCrear,
+    actor: Usuario = Depends(requiere("maestros.proveedor.editar")),
+    db: Session = Depends(get_db),
+):
+    return service.crear_contacto(db, actor, proveedor_id, datos.model_dump())
+
+
+@router.patch("/contactos/{contacto_id}", response_model=ContactoSalida, summary="Editar contacto")
+def cambiar_contacto(
+    contacto_id: uuid.UUID,
+    datos: ContactoCambio,
+    actor: Usuario = Depends(requiere("maestros.proveedor.editar")),
+    db: Session = Depends(get_db),
+):
+    cambios = datos.model_dump(exclude_unset=True)
+    for campo in ("nombre", "principal"):
+        if cambios.get(campo, "") is None:
+            cambios.pop(campo)
+    return service.cambiar_contacto(db, actor, contacto_id, cambios)
+
+
+@router.delete("/contactos/{contacto_id}", status_code=204, summary="Quitar contacto")
+def eliminar_contacto(
+    contacto_id: uuid.UUID,
+    actor: Usuario = Depends(requiere("maestros.proveedor.editar")),
+    db: Session = Depends(get_db),
+):
+    service.eliminar_contacto(db, actor, contacto_id)
+    return Response(status_code=204)
+
+
+@router.post(
+    "/proveedores/{proveedor_id}/cuentas-bancarias",
+    response_model=CuentaBancariaSalida,
+    status_code=201,
+    summary="Registrar cuenta bancaria (permiso especial)",
+)
+def crear_cuenta_bancaria(
+    proveedor_id: uuid.UUID,
+    datos: CuentaBancariaCrear,
+    actor: Usuario = Depends(requiere("maestros.proveedor.banco")),
+    db: Session = Depends(get_db),
+):
+    return _cuenta(service.crear_cuenta_bancaria(db, actor, proveedor_id, datos.model_dump()), True)
+
+
+@router.patch(
+    "/cuentas-bancarias/{cuenta_id}",
+    response_model=CuentaBancariaSalida,
+    summary="Activar o desactivar cuenta bancaria (permiso especial)",
+)
+def cambiar_cuenta_bancaria(
+    cuenta_id: uuid.UUID,
+    datos: CuentaBancariaCambio,
+    actor: Usuario = Depends(requiere("maestros.proveedor.banco")),
+    db: Session = Depends(get_db),
+):
+    return _cuenta(service.cambiar_cuenta_bancaria(db, actor, cuenta_id, datos.activo), True)
+
+
+@router.put(
+    "/proveedores/{proveedor_id}/categorias",
+    response_model=ProveedorSalida,
+    summary="Categorías de artículo que provee",
+)
+def asignar_categorias(
+    proveedor_id: uuid.UUID,
+    datos: CategoriasCambio,
+    actor: Usuario = Depends(requiere("maestros.proveedor.editar")),
+    db: Session = Depends(get_db),
+):
+    prov = service.asignar_categorias(db, actor, proveedor_id, datos.categoria_ids)
+    return _proveedor(prov, _ve_banco(db, actor))
+
+
+@router.put(
+    "/proveedores/{proveedor_id}/empresas/{empresa_id}",
+    response_model=ProveedorSalida,
+    summary="Bloquear o habilitar el proveedor para una empresa",
+)
+def bloquear_proveedor(
+    proveedor_id: uuid.UUID,
+    empresa_id: uuid.UUID,
+    datos: BloqueoCambio,
+    actor: Usuario = Depends(requiere("maestros.proveedor.editar")),
+    db: Session = Depends(get_db),
+):
+    prov = service.bloquear_proveedor(
+        db, actor, proveedor_id, empresa_id, datos.bloqueado, datos.motivo
+    )
+    return _proveedor(prov, _ve_banco(db, actor))

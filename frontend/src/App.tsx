@@ -2,9 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import Auditoria from "./paginas/Auditoria";
 import Categorias from "./paginas/Categorias";
 import CentrosCosto from "./paginas/CentrosCosto";
+import CondicionesPago from "./paginas/CondicionesPago";
 import Impuestos from "./paginas/Impuestos";
 import PerfilesContables from "./paginas/PerfilesContables";
 import PlanCuentas from "./paginas/PlanCuentas";
+import Proveedores from "./paginas/Proveedores";
 import Empresas from "./paginas/Empresas";
 import Monedas from "./paginas/Monedas";
 import Unidades from "./paginas/Unidades";
@@ -31,7 +33,9 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
       { ruta: "empresas", nombre: "Empresas", permiso: "maestros.empresa.ver", pagina: () => <Empresas /> },
       { ruta: "monedas", nombre: "Monedas y tipo de cambio", permiso: "maestros.moneda.ver", pagina: () => <Monedas /> },
       { ruta: "unidades", nombre: "Unidades de medida", permiso: "maestros.unidad.ver", pagina: () => <Unidades /> },
+      { ruta: "proveedores", nombre: "Proveedores", permiso: "maestros.proveedor.ver", pagina: () => <Proveedores /> },
       { ruta: "categorias", nombre: "Categorías de artículo", permiso: "maestros.categoria.ver", pagina: () => <Categorias /> },
+      { ruta: "condiciones-pago", nombre: "Condiciones de pago", permiso: "maestros.proveedor.ver", pagina: () => <CondicionesPago /> },
     ],
   },
   {

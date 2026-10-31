@@ -6,6 +6,16 @@
 
 **RUC**: 11 dígitos, prefijo 10 (persona natural), 15, 16, 17 o 20 (persona jurídica) y dígito verificador módulo 11 con pesos 5-4-3-2-7-6-5-4-3-2. Implementado en `backend/app/localizacion/pe`.
 
+## Documentos de proveedores
+
+| Tipo | Validación | Código SUNAT (Catálogo N.° 06) |
+| --- | --- | --- |
+| RUC | 11 dígitos y dígito verificador | 6 |
+| DNI | 8 dígitos | 1 |
+| Exterior (no domiciliado) | 3 a 20 letras o números, con país de origen | 0 |
+
+Cuentas bancarias locales: **CCI** de 20 dígitos obligatorio.
+
 ## Unidades de medida
 
 Código oficial según el Catálogo N.° 03 de SUNAT (UN/ECE Rec. 20): `NIU` unidad, `ZZ` servicio, `KGM` kilogramo, `LTR` litro, `BX` caja, entre otros.
