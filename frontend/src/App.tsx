@@ -1,5 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Auditoria from "./paginas/Auditoria";
+import CentrosCosto from "./paginas/CentrosCosto";
+import Impuestos from "./paginas/Impuestos";
+import PerfilesContables from "./paginas/PerfilesContables";
+import PlanCuentas from "./paginas/PlanCuentas";
 import Empresas from "./paginas/Empresas";
 import Monedas from "./paginas/Monedas";
 import Unidades from "./paginas/Unidades";
@@ -26,6 +30,16 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
       { ruta: "empresas", nombre: "Empresas", permiso: "maestros.empresa.ver", pagina: () => <Empresas /> },
       { ruta: "monedas", nombre: "Monedas y tipo de cambio", permiso: "maestros.moneda.ver", pagina: () => <Monedas /> },
       { ruta: "unidades", nombre: "Unidades de medida", permiso: "maestros.unidad.ver", pagina: () => <Unidades /> },
+    ],
+  },
+  {
+    modulo: "contabilidad",
+    grupo: "negocio",
+    rutas: [
+      { ruta: "plan-cuentas", nombre: "Plan de cuentas", permiso: "contabilidad.cuenta.ver", pagina: () => <PlanCuentas /> },
+      { ruta: "perfiles", nombre: "Perfiles contables", permiso: "contabilidad.perfil.ver", pagina: () => <PerfilesContables /> },
+      { ruta: "centros-costo", nombre: "Centros de costo", permiso: "contabilidad.centro_costo.ver", pagina: () => <CentrosCosto /> },
+      { ruta: "impuestos", nombre: "Impuestos", permiso: "contabilidad.impuesto.ver", pagina: () => <Impuestos /> },
     ],
   },
   {

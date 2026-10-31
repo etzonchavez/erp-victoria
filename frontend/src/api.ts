@@ -47,6 +47,62 @@ export type TipoCambio = {
 export type UnidadMedida = { codigo: string; nombre: string; codigo_oficial: string; tipo: string; activo: boolean };
 export type Conversion = { id: string; origen: string; destino: string; factor: string };
 
+// Contabilidad base
+export type CuentaResumen = { id: string; codigo: string; nombre: string };
+export type Cuenta = CuentaResumen & {
+  padre_id: string | null;
+  nivel: number;
+  naturaleza: string;
+  imputable: boolean;
+  plantilla: string;
+  activo: boolean;
+};
+export type PerfilContable = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo_articulo: string;
+  cuenta_cargo: CuentaResumen;
+  cuenta_existencia: CuentaResumen | null;
+  cuenta_variacion: CuentaResumen | null;
+  cuenta_por_pagar: CuentaResumen;
+  activo: boolean;
+};
+export type CentroCosto = {
+  id: string;
+  unidad_negocio_id: string;
+  codigo: string;
+  nombre: string;
+  responsable: string | null;
+  activo: boolean;
+};
+export type Impuesto = { id: string; codigo: string; nombre: string; tasa: string; cuenta: CuentaResumen | null; activo: boolean };
+
+export const NOMBRE_TIPO_ARTICULO: Record<string, string> = {
+  bien_inventariable: "Bien inventariable",
+  bien_no_inventariable: "Bien no inventariable",
+  servicio: "Servicio",
+  activo_fijo: "Activo fijo",
+};
+export const NOMBRE_NATURALEZA: Record<string, string> = {
+  activo: "Activo",
+  pasivo: "Pasivo",
+  patrimonio: "Patrimonio",
+  gasto: "Gasto",
+  ingreso: "Ingreso",
+  resultado: "Resultado",
+  analitica: "Analítica",
+  orden: "Orden",
+};
+/** Igual que REGLAS_PERFIL del backend: naturaleza permitida de cada cuenta; null = no aplica. */
+export const REGLAS_PERFIL: Record<string, Record<"cargo" | "existencia" | "variacion" | "por_pagar", string[] | null>> = {
+  bien_inventariable: { cargo: ["gasto"], existencia: ["activo"], variacion: ["gasto"], por_pagar: ["pasivo"] },
+  bien_no_inventariable: { cargo: ["gasto"], existencia: null, variacion: null, por_pagar: ["pasivo"] },
+  servicio: { cargo: ["gasto"], existencia: null, variacion: null, por_pagar: ["pasivo"] },
+  activo_fijo: { cargo: ["activo"], existencia: null, variacion: null, por_pagar: ["pasivo"] },
+};
+export const cuentaTexto = (c: CuentaResumen | null) => (c ? `${c.codigo} ${c.nombre}` : "—");
+
 export const NOMBRE_TIPO_UNIDAD: Record<string, string> = {
   cantidad: "Cantidad",
   servicio: "Servicio",

@@ -5,7 +5,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-import app.modules.maestros.models  # noqa: F401  registra las tablas
+import app.modules.contabilidad.models  # noqa: F401  registra las tablas
+import app.modules.maestros.models  # noqa: F401
 import app.modules.seguridad.models  # noqa: F401
 from app.core.config import get_settings
 from app.core.database import Base

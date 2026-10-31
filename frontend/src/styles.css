@@ -291,3 +291,14 @@ th.numero, td.numero:not(:first-child) { text-align: right; }
 .bloque-lista { margin-bottom: 12px; }
 .boton-chico { padding: 5px 10px; font-size: 13px; }
 .tabla td p.tenue { font-size: 13px; }
+
+/* ---------- contabilidad ---------- */
+.barra-filtros { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; margin: -8px 0 16px; }
+.barra-filtros:empty { display: none; }
+.empresa-fija { font-size: 14px; }
+.empresa-fija .tenue { margin-right: 6px; }
+.selector-empresa select { min-width: 260px; }
+.tabla-plan td { padding-top: 8px; padding-bottom: 8px; }
+.tabla-plan .fila-titulo td { background: var(--papel); font-weight: 600; }
+.codigo-cuenta { font-variant-numeric: tabular-nums; font-weight: 600; margin-right: 8px; color: var(--tinta); }
+.tabla-plan td:nth-child(4), .tabla-plan td:nth-child(5) { white-space: nowrap; }

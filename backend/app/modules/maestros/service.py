@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ErrorERP, no_encontrado
+from app.core.eventos import emitir
 from app.localizacion import PAISES, pais
 from app.modules.maestros import datos_base
 from app.modules.maestros.models import (
@@ -75,8 +76,11 @@ def preparar(db: Session) -> None:
 # ---------------------------------------------------------------- empresas
 
 
-def listar_empresas(db: Session) -> list[Empresa]:
-    return list(db.scalars(select(Empresa).order_by(Empresa.razon_social)))
+def listar_empresas(db: Session, solo_activas: bool = False) -> list[Empresa]:
+    q = select(Empresa).order_by(Empresa.razon_social)
+    if solo_activas:
+        q = q.where(Empresa.activo.is_(True))
+    return list(db.scalars(q))
 
 
 def obtener_empresa(db: Session, empresa_id: uuid.UUID) -> Empresa:
@@ -129,6 +133,9 @@ def crear_empresa(db: Session, actor: Usuario, datos: dict) -> Empresa:
     )
     db.add(principal)
     db.flush()
+    db.refresh(empresa)
+    # Otros módulos preparan sus datos (ej. contabilidad carga el plan de cuentas del país).
+    emitir("empresa_creada", db, actor, empresa)
     auditar(
         db,
         actor,
@@ -168,7 +175,7 @@ def cambiar_empresa(db: Session, actor: Usuario, empresa_id: uuid.UUID, cambios:
 # ---------------------------------------------------------------- unidades de negocio
 
 
-def _obtener_unidad_negocio(db: Session, unidad_id: uuid.UUID) -> UnidadNegocio:
+def obtener_unidad_negocio(db: Session, unidad_id: uuid.UUID) -> UnidadNegocio:
     un = db.get(UnidadNegocio, unidad_id)
     if not un:
         raise no_encontrado("La unidad de negocio")
@@ -215,7 +222,7 @@ def crear_unidad_negocio(
 def cambiar_unidad_negocio(
     db: Session, actor: Usuario, unidad_id: uuid.UUID, cambios: dict
 ) -> UnidadNegocio:
-    un = _obtener_unidad_negocio(db, unidad_id)
+    un = obtener_unidad_negocio(db, unidad_id)
     if cambios.get("activo") is False and un.activo:
         otras = [u for u in un.empresa.unidades if u.activo and u.id != un.id]
         if not otras:

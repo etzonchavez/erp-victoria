@@ -34,6 +34,7 @@ class PermisoDef:
 MODULOS: list[ModuloDef] = [
     ModuloDef("seguridad", "Seguridad", "SEG", 10, obligatorio=True),
     ModuloDef("maestros", "Maestros", "MAE", 20),
+    ModuloDef("contabilidad", "Contabilidad", "CNT", 25),
     ModuloDef("solicitudes", "Solicitudes de compra", "SOL", 30),
     ModuloDef("compras", "Compras", "COM", 40),
 ]
@@ -58,6 +59,17 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("maestros.tipo_cambio.registrar", "Registrar el tipo de cambio diario"),
     PermisoDef("maestros.unidad.ver", "Ver unidades de medida y conversiones"),
     PermisoDef("maestros.unidad.editar", "Crear y editar unidades de medida y conversiones"),
+    # Contabilidad base (ADR-004)
+    PermisoDef("contabilidad.cuenta.ver", "Ver el plan de cuentas"),
+    PermisoDef(
+        "contabilidad.cuenta.editar", "Crear y editar cuentas; cargar la plantilla del país"
+    ),
+    PermisoDef("contabilidad.perfil.ver", "Ver perfiles contables"),
+    PermisoDef("contabilidad.perfil.editar", "Crear y editar perfiles contables"),
+    PermisoDef("contabilidad.centro_costo.ver", "Ver centros de costo"),
+    PermisoDef("contabilidad.centro_costo.editar", "Crear y editar centros de costo"),
+    PermisoDef("contabilidad.impuesto.ver", "Ver impuestos"),
+    PermisoDef("contabilidad.impuesto.editar", "Crear y editar impuestos"),
 ]
 
 
@@ -195,5 +207,40 @@ ROLES_ESTANDAR: list[RolDef] = [
         "consulta",
         "Consulta empresas, monedas, tipos de cambio y unidades sin poder cambiarlos.",
         ["maestros.empresa.ver", "maestros.moneda.ver", "maestros.unidad.ver"],
+    ),
+    RolDef(
+        "ERP_CNT_ADMINISTRADOR",
+        "contabilidad",
+        "Contador",
+        "administrador",
+        "Define el plan de cuentas, los perfiles contables, los impuestos y los centros de costo.",
+        [p.codigo for p in PERMISOS if p.modulo == "contabilidad"],
+    ),
+    RolDef(
+        "ERP_CNT_CONFIGURADOR",
+        "contabilidad",
+        "Analista contable",
+        "configuracion",
+        "Mantiene los centros de costo y consulta la configuración contable.",
+        [
+            "contabilidad.cuenta.ver",
+            "contabilidad.perfil.ver",
+            "contabilidad.centro_costo.ver",
+            "contabilidad.centro_costo.editar",
+            "contabilidad.impuesto.ver",
+        ],
+    ),
+    RolDef(
+        "ERP_CNT_CONSULTA",
+        "contabilidad",
+        "Consulta contable",
+        "consulta",
+        "Consulta el plan de cuentas, perfiles, centros de costo e impuestos.",
+        [
+            "contabilidad.cuenta.ver",
+            "contabilidad.perfil.ver",
+            "contabilidad.centro_costo.ver",
+            "contabilidad.impuesto.ver",
+        ],
     ),
 ]

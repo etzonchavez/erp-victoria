@@ -37,6 +37,15 @@ class UnidadNegocioCambio(BaseModel):
     activo: bool | None = None
 
 
+class EmpresaResumen(Esquema):
+    id: uuid.UUID
+    pais: str
+    identificacion_fiscal: str
+    razon_social: str
+    moneda_funcional: str
+    unidades: list[UnidadNegocioSalida]
+
+
 class EmpresaSalida(Esquema):
     id: uuid.UUID
     pais: str

@@ -7,8 +7,10 @@ Agregar un país = agregar un paquete y registrarlo en PAISES; el núcleo no cam
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from app.localizacion import pe
+from app.localizacion.pe import plan_contable as pe_plan
 
 
 @dataclass(frozen=True)
@@ -19,6 +21,9 @@ class Pais:
     nombre_identificacion_fiscal: str  # RUC, NIT, RUT…
     validar_identificacion_fiscal: Callable[[str], str | None]  # motivo del error o None
     zona_horaria: str
+    plan_contable: Any = (
+        None  # módulo con PLANTILLA, NATURALEZA_POR_ELEMENTO, CUENTAS, PERFILES, IMPUESTOS
+    )
 
 
 PAISES: dict[str, Pais] = {
@@ -29,6 +34,7 @@ PAISES: dict[str, Pais] = {
         nombre_identificacion_fiscal="RUC",
         validar_identificacion_fiscal=pe.validar_ruc,
         zona_horaria="America/Lima",
+        plan_contable=pe_plan,
     ),
 }
 

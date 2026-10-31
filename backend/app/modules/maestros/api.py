@@ -14,6 +14,7 @@ from app.modules.maestros.schemas import (
     ConversionSalida,
     EmpresaCambio,
     EmpresaCrear,
+    EmpresaResumen,
     EmpresaSalida,
     MonedaCambio,
     MonedaCrear,
@@ -28,7 +29,7 @@ from app.modules.maestros.schemas import (
     UnidadNegocioSalida,
     UnidadSalida,
 )
-from app.modules.seguridad.deps import requiere
+from app.modules.seguridad.deps import requiere, usuario_actual
 from app.modules.seguridad.models import Usuario
 
 router = APIRouter()
@@ -60,6 +61,16 @@ def paises(_: Usuario = Depends(requiere("maestros.empresa.ver"))):
 @router.get("/empresas", response_model=list[EmpresaSalida], summary="Listar empresas")
 def empresas(_: Usuario = Depends(requiere("maestros.empresa.ver")), db: Session = Depends(get_db)):
     return service.listar_empresas(db)
+
+
+@router.get(
+    "/empresas/accesibles",
+    response_model=list[EmpresaResumen],
+    summary="Empresas activas con las que el usuario puede trabajar (selector de empresa)",
+)
+def empresas_accesibles(_: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)):
+    # Hoy todas las activas; con el acceso por empresa (pendiente) se filtrará por usuario.
+    return service.listar_empresas(db, solo_activas=True)
 
 
 @router.post("/empresas", response_model=EmpresaSalida, status_code=201, summary="Crear empresa")

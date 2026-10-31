@@ -35,6 +35,12 @@ Prefijos de tablas: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` co
 - **Confirmación:** tras toda acción exitosa llamar `avisar("…")` de `useAvisos()`; en formularios que no se cierran, además `useConfirmacion()` para mostrar *✓ Guardado* en el botón.
 - **Gris = no permitido:** el estado deshabilitado se reserva para acciones sin permiso o no aplicables.
 
+## Comunicación entre módulos
+
+- Un módulo llama a otro solo por su `service.py`.
+- Cuando un módulo debe reaccionar a algo de otro sin acoplarlos, se usa `app/core/eventos.py`: el publicador llama `emitir("empresa_creada", …)` y el interesado se registra con `@suscribir("empresa_creada")`. Ejemplo: Contabilidad carga el plan de cuentas al crear una empresa sin que Maestros conozca a Contabilidad.
+- Lo propio de cada país (identificación fiscal, plantilla contable, impuestos) vive en `app/localizacion/<país>`.
+
 ## Git
 
 - Rama principal `main`; trabajo en ramas `semana-N/tarea`.

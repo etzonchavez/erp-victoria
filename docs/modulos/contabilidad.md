@@ -1,6 +1,6 @@
 # Contabilidad base
 
-**Versión:** diseño · **Estado:** en construcción (Semana 3) · Asientos reales: Fase 1 (2027)
+**Versión:** 0.7.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos) · Asientos reales: Fase 1 (2027)
 
 ## 1. Objetivo
 
@@ -10,11 +10,24 @@ Dar a cada empresa un **plan de cuentas**, **perfiles contables**, **centros de 
 
 | Rol estándar | Tipo | Para quién |
 | --- | --- | --- |
-| `ERP_CNT_ADMINISTRADOR` | administrador | Contador: plan de cuentas, perfiles, impuestos |
-| `ERP_CNT_CONFIGURADOR` | configuracion | Analista contable: centros de costo, excepciones de artículos |
+| `ERP_CNT_ADMINISTRADOR` | administrador | Contador: plan de cuentas, perfiles, impuestos y centros de costo |
+| `ERP_CNT_CONFIGURADOR` | configuracion | Analista contable: mantiene los centros de costo y consulta el resto |
 | `ERP_CNT_CONSULTA` | consulta | Auditoría, gerencia |
 
-Permisos: `contabilidad.cuenta.ver/editar`, `contabilidad.perfil.ver/editar`, `contabilidad.centro_costo.ver/editar`, `contabilidad.impuesto.ver/editar`.
+| Permiso | Permite |
+| --- | --- |
+| `contabilidad.cuenta.ver` / `.editar` | Ver el plan; crear y editar cuentas; cargar la plantilla del país |
+| `contabilidad.perfil.ver` / `.editar` | Perfiles contables |
+| `contabilidad.centro_costo.ver` / `.editar` | Centros de costo |
+| `contabilidad.impuesto.ver` / `.editar` | Impuestos |
+
+El módulo **Contabilidad** se activa en *Administración → Módulos*. Todas las pantallas trabajan sobre una empresa: si hay varias, se elige arriba en cada pantalla y el ERP la recuerda.
+
+## Puesta en marcha
+
+1. Al **crear una empresa** (Maestros → Empresas) se cargan automáticamente su plan de cuentas, los 6 perfiles contables y los impuestos del país, aunque el módulo Contabilidad esté inactivo.
+2. Las empresas creadas antes de la versión 0.7.0 no tienen plan: en **Contabilidad → Plan de cuentas** aparece el botón *Cargar plantilla del país (PCGE)*. Solo funciona si la empresa no tiene cuentas.
+3. El contador revisa las cuentas marcadas *por validar*, agrega las subcuentas que use su empresa y crea los centros de costo.
 
 ## 3. Elementos
 
@@ -22,12 +35,18 @@ Permisos: `contabilidad.cuenta.ver/editar`, `contabilidad.perfil.ver/editar`, `c
 
 | Campo | Regla |
 | --- | --- |
-| Código | Numérico, único; su prefijo debe ser el de la cuenta padre (`6011` cuelga de `601`) |
+| Código | Solo dígitos, único en la empresa. El **padre se detecta solo**: la cuenta existente de código más largo que sea su prefijo (`63211` cuelga de `6321`, o de `63` si no existe `632`) |
 | Nombre | Obligatorio |
-| Naturaleza | Activo, pasivo, patrimonio, gasto, ingreso, orden (se hereda de la clase) |
-| Imputable | Solo las cuentas imputables se usan en perfiles, impuestos y compras |
-| Plantilla de origen | `PCGE-2019`, `PCGE-2026`, `propia` |
-| Activa | Una cuenta usada no se elimina, solo se desactiva |
+| Naturaleza | Se hereda del padre. Una cuenta de primer nivel la toma del elemento del PCGE (6 = gasto, 4 = pasivo…) |
+| Imputable | Automático: una cuenta es imputable mientras no tenga subcuentas. Solo las imputables se usan en perfiles, impuestos y compras |
+| Origen | `PCGE-2019` (plantilla) o `Propia` |
+| Activa | Las cuentas no se eliminan, solo se desactivan |
+
+Reglas:
+
+- No se crea una subcuenta bajo una cuenta que ya usa un perfil o impuesto (dejaría de ser imputable): primero se reasigna el perfil.
+- No se crea una cuenta "intermedia" (ej. `60` si ya existe `601`): las cuentas nuevas se agregan como subcuentas.
+- No se desactiva una cuenta usada por un perfil o impuesto, ni una con subcuentas activas.
 
 ### Perfiles contables (precargados en Perú)
 
@@ -45,9 +64,27 @@ Códigos de los elementos 2, 3 y 4 verificados contra el catálogo oficial del P
 !!! warning "Validación contable"
     Los códigos de la plantilla siguen el PCGE Modificado 2019 y los debe revisar un contador antes del primer cliente. Como son configurables, ajustarlos no requiere cambiar código.
 
+Validaciones de cada perfil según el tipo de artículo:
+
+| Tipo | Cargo | Existencia y variación | Por pagar |
+| --- | --- | --- | --- |
+| Bien inventariable | Gasto | Obligatorias: existencia de activo, variación de gasto | Pasivo |
+| Bien no inventariable | Gasto | No llevan | Pasivo |
+| Servicio | Gasto | No llevan | Pasivo |
+| Activo fijo | Activo | No llevan | Pasivo |
+
+Todas las cuentas deben ser imputables, activas y de la misma empresa. El código y el tipo del perfil no cambian; las cuentas sí, y el cambio aplica a las compras nuevas.
+
 ### Centros de costo
 
-Código, nombre, unidad de negocio, responsable (opcional), activo. Cada línea de solicitud lleva un centro de costo; por defecto, el del solicitante.
+| Campo | Regla |
+| --- | --- |
+| Código | Mayúsculas, números, `-` o `_`, hasta 20; único en la empresa |
+| Nombre | Obligatorio |
+| Unidad de negocio | Obligatoria, activa y de la misma empresa |
+| Responsable | Opcional |
+
+Cada línea de solicitud llevará un centro de costo (Semana 4).
 
 ### Impuestos
 
@@ -56,6 +93,8 @@ Código, nombre, unidad de negocio, responsable (opcional), activo. Cada línea 
 | `IGV18` | 18 % | 40111 IGV – Cuenta propia |
 | `EXO` | 0 % (exonerado) | — |
 | `INA` | 0 % (inafecto) | — |
+
+Un impuesto con tasa mayor a cero necesita una cuenta imputable de pasivo o de activo (por ejemplo 1673 si la empresa registra el IGV por acreditar).
 
 ## 4. Vista previa del asiento (orden de compra, Semana 5)
 

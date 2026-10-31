@@ -80,7 +80,7 @@ Una instalación de Victoria ERP puede tener **varias empresas legales** (por ej
 | Moneda funcional | Por defecto la del país (PEN). **No se puede cambiar**: la contabilidad se lleva en esa moneda |
 | Activa | Una empresa inactiva no opera |
 
-Al crear una empresa se crea su unidad de negocio **Principal**, para que pueda operar de inmediato.
+Al crear una empresa se crea su unidad de negocio **Principal** y se carga su **plan de cuentas** con perfiles e impuestos del país ([Contabilidad base](contabilidad.md)), para que pueda operar de inmediato.
 
 ### Unidades de negocio
 
