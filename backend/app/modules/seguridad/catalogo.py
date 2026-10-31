@@ -51,6 +51,10 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("seguridad.modulo.editar", "Activar y desactivar módulos"),
     PermisoDef("seguridad.personalizacion.editar", "Cambiar el logo y el nombre de la empresa"),
     PermisoDef("seguridad.auditoria.ver", "Consultar la auditoría"),
+    PermisoDef(
+        "seguridad.atributo.editar",
+        "Activar y configurar los atributos adicionales de los documentos",
+    ),
     # Maestros
     PermisoDef("maestros.empresa.ver", "Ver empresas y unidades de negocio"),
     PermisoDef("maestros.empresa.editar", "Crear y editar empresas y unidades de negocio"),
@@ -146,7 +150,7 @@ ROLES_ESTANDAR: list[RolDef] = [
         "seguridad",
         "Configurador del sistema",
         "configuracion",
-        "Activa módulos, diseña los roles y personaliza el logo de la empresa.",
+        "Activa módulos, diseña los roles, configura los atributos adicionales y el logo.",
         [
             "seguridad.modulo.ver",
             "seguridad.modulo.editar",
@@ -154,6 +158,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "seguridad.rol.crear",
             "seguridad.rol.editar",
             "seguridad.personalizacion.editar",
+            "seguridad.atributo.editar",
         ],
     ),
     RolDef(

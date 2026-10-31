@@ -148,3 +148,36 @@ class PersonalizacionSalida(BaseModel):
 
 class PersonalizacionCambio(BaseModel):
     nombre_empresa: str | None = Field(default=None, max_length=150)
+
+
+# Atributos adicionales (ADR-005)
+class DocumentoSalida(BaseModel):
+    codigo: str
+    nombre: str
+    niveles: list[str]
+    destinos: list[str]
+
+
+class AtributoSalida(BaseModel):
+    documento: str
+    nivel: str
+    tipo: str
+    numero: int
+    columna: str
+    activo: bool
+    etiqueta: str | None
+    ayuda: str | None
+    valor_defecto: str | None
+    valores: list[str]
+    copiar_documento: str | None
+    copiar_numero: int | None
+
+
+class AtributoCambio(BaseModel):
+    activo: bool
+    etiqueta: str | None = Field(default=None, max_length=60)
+    ayuda: str | None = Field(default=None, max_length=200)
+    valor_defecto: str | None = Field(default=None, max_length=240)
+    valores: list[str] = Field(default_factory=list)
+    copiar_documento: str | None = None
+    copiar_numero: int | None = None

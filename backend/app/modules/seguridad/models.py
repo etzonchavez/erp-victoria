@@ -13,6 +13,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     Table,
+    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -111,3 +112,44 @@ class Personalizacion(Base):
         DateTime(timezone=True), default=ahora_utc, onupdate=ahora_utc
     )
     actualizado_por: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+
+
+class Atributo(ConAuditoria, Base):
+    """Configuración de un atributo adicional de un documento operativo (ADR-005).
+
+    Una fila por atributo configurado alguna vez; los que no tienen fila están inactivos.
+    La configuración es una sola para todo el grupo de empresas.
+    """
+
+    __tablename__ = "seg_atributo"
+    __table_args__ = (UniqueConstraint("documento", "nivel", "tipo", "numero"),)
+
+    documento: Mapped[str] = mapped_column(String(30))  # solicitud, orden_compra…
+    nivel: Mapped[str] = mapped_column(String(20))  # cabecera, linea, distribucion
+    tipo: Mapped[str] = mapped_column(String(10))  # texto, numero, fecha
+    numero: Mapped[int] = mapped_column(Integer)  # 1..10
+    etiqueta: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    ayuda: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    valor_defecto: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    activo: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Atributo del documento siguiente al que se copia (mismo nivel y tipo)
+    copiar_documento: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    copiar_numero: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    valores: Mapped[list["AtributoValor"]] = relationship(
+        lazy="selectin", order_by="AtributoValor.orden", cascade="all, delete-orphan"
+    )
+
+
+class AtributoValor(Base):
+    """Lista de valores de un atributo de texto."""
+
+    __tablename__ = "seg_atributo_valor"
+    __table_args__ = (UniqueConstraint("atributo_id", "valor"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    atributo_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("seg_atributo.id", ondelete="CASCADE"), index=True
+    )
+    valor: Mapped[str] = mapped_column(String(240))
+    orden: Mapped[int] = mapped_column(Integer, default=0)

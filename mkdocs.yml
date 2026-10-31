@@ -30,6 +30,7 @@ nav:
       - ADR-002 Arquitectura: adr/0002-arquitectura.md
       - ADR-003 Infraestructura a costo cero: adr/0003-infraestructura.md
       - ADR-004 Base contable configurable: adr/0004-base-contable.md
+      - ADR-005 Atributos adicionales: adr/0005-atributos-adicionales.md
   - Módulos:
       - Índice: modulos/index.md
       - Seguridad: modulos/seguridad.md

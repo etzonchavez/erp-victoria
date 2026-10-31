@@ -172,6 +172,25 @@ export type EstadoContable = {
   problema: string | null;
 };
 
+// Atributos adicionales (ADR-005)
+export type DocumentoOperativo = { codigo: string; nombre: string; niveles: string[]; destinos: string[] };
+export type AtributoConfig = {
+  documento: string;
+  nivel: string;
+  tipo: "texto" | "numero" | "fecha";
+  numero: number;
+  columna: string;
+  activo: boolean;
+  etiqueta: string | null;
+  ayuda: string | null;
+  valor_defecto: string | null;
+  valores: string[];
+  copiar_documento: string | null;
+  copiar_numero: number | null;
+};
+export const NOMBRE_NIVEL: Record<string, string> = { cabecera: "Cabecera", linea: "Línea", distribucion: "Distribución" };
+export const NOMBRE_TIPO_ATRIBUTO: Record<string, string> = { texto: "Texto", numero: "Número", fecha: "Fecha" };
+
 export const NOMBRE_TIPO_ARTICULO: Record<string, string> = {
   bien_inventariable: "Bien inventariable",
   bien_no_inventariable: "Bien no inventariable",

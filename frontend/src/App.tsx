@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Articulos from "./paginas/Articulos";
+import Atributos from "./paginas/Atributos";
 import Auditoria from "./paginas/Auditoria";
 import Categorias from "./paginas/Categorias";
 import CentrosCosto from "./paginas/CentrosCosto";
@@ -62,6 +63,12 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
         nombre: "Personalización",
         permiso: "seguridad.personalizacion.editar",
         pagina: () => <Personalizacion />,
+      },
+      {
+        ruta: "atributos",
+        nombre: "Atributos adicionales",
+        permiso: "seguridad.atributo.editar",
+        pagina: () => <Atributos />,
       },
       { ruta: "auditoria", nombre: "Auditoría", permiso: "seguridad.auditoria.ver", pagina: () => <Auditoria /> },
     ],

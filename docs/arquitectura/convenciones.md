@@ -35,6 +35,15 @@ Prefijos de tablas: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` co
 - **Confirmación:** tras toda acción exitosa llamar `avisar("…")` de `useAvisos()`; en formularios que no se cierran, además `useConfirmacion()` para mostrar *✓ Guardado* en el botón.
 - **Gris = no permitido:** el estado deshabilitado se reserva para acciones sin permiso o no aplicables.
 
+## Documentos operativos
+
+Todo documento operativo (solicitud, orden de compra, recepción, factura…) cumple [ADR-005](../adr/0005-atributos-adicionales.md):
+
+- Sus tablas de **cabecera, línea y distribución** heredan `ConAtributos` (`app/core/atributos.py`) y su migración agrega `*columnas_atributos()`.
+- El documento se registra en `DOCUMENTOS` y, si genera otro, en `FLUJOS`.
+- El servicio valida con `seguridad.atributos.validar_valores` al guardar, propone `valores_por_defecto` al crear y usa `copiar_valores` al generar el documento siguiente.
+- La pantalla usa `<CamposAtributos documento nivel valores onCambio />` en cada nivel.
+
 ## Comunicación entre módulos
 
 - Un módulo llama a otro solo por su `service.py`.

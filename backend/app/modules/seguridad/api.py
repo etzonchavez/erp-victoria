@@ -6,14 +6,18 @@ from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from app.core import atributos as nucleo_atributos
 from app.core.database import get_db
 from app.core.errors import no_encontrado
 from app.core.security import crear_token
-from app.modules.seguridad import catalogo, service
+from app.modules.seguridad import atributos, catalogo, service
 from app.modules.seguridad.deps import requiere, usuario_actual
 from app.modules.seguridad.models import Rol, Usuario
 from app.modules.seguridad.schemas import (
+    AtributoCambio,
+    AtributoSalida,
     AuditoriaSalida,
+    DocumentoSalida,
     LoginEntrada,
     ModuloCambio,
     ModuloSalida,
@@ -288,3 +292,60 @@ def quitar_logo(
     db: Session = Depends(get_db),
 ):
     return _personalizacion(service.quitar_logo(db, actor), request)
+
+
+# ---------------------------------------------------------------- atributos adicionales
+
+
+@router.get(
+    "/documentos",
+    response_model=list[DocumentoSalida],
+    summary="Documentos operativos que llevan atributos adicionales",
+)
+def documentos(_: Usuario = Depends(usuario_actual)):
+    return [
+        DocumentoSalida(
+            codigo=d.codigo,
+            nombre=d.nombre,
+            niveles=list(d.niveles),
+            destinos=nucleo_atributos.destinos(d.codigo),
+        )
+        for d in nucleo_atributos.DOCUMENTOS.values()
+    ]
+
+
+@router.get(
+    "/atributos",
+    response_model=list[AtributoSalida],
+    summary="Configuración de atributos (las pantallas la usan para dibujar los campos)",
+)
+def listar_atributos(
+    documento: str | None = None,
+    solo_activos: bool = False,
+    _: Usuario = Depends(usuario_actual),
+    db: Session = Depends(get_db),
+):
+    return atributos.listar(db, documento, solo_activos)
+
+
+@router.put(
+    "/atributos/{documento}/{nivel}/{tipo}/{numero}",
+    response_model=AtributoSalida,
+    summary="Activar, configurar o desactivar un atributo",
+)
+def definir_atributo(
+    documento: str,
+    nivel: str,
+    tipo: str,
+    numero: int,
+    datos: AtributoCambio,
+    actor: Usuario = Depends(requiere("seguridad.atributo.editar")),
+    db: Session = Depends(get_db),
+):
+    atributos.definir(db, actor, documento, nivel, tipo, numero, datos.model_dump())
+    fila = next(
+        a
+        for a in atributos.listar(db, documento)
+        if (a["nivel"], a["tipo"], a["numero"]) == (nivel, tipo, numero)
+    )
+    return fila

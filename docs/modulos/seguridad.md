@@ -1,6 +1,6 @@
 # Seguridad
 
-**Versión:** 0.5.0 · **Estado:** disponible
+**Versión:** 0.11.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -133,6 +133,20 @@ El logo y el nombre aparecen en la pantalla de ingreso (antes de iniciar sesión
 
 !!! tip "Para un logo nítido"
     Usa un PNG horizontal con fondo transparente de 600 a 1200 px de ancho. En el menú el logo se muestra en unos 200 px; una imagen más grande se ve nítida también en pantallas de alta resolución.
+
+### Atributos adicionales
+
+*Administración → Atributos adicionales* ([ADR-005](../adr/0005-atributos-adicionales.md)). Para cada documento operativo (solicitud de compra, orden de compra) y cada nivel (cabecera, línea, distribución) hay 10 atributos de texto, 10 numéricos y 10 de fecha, todos inactivos al inicio. La configuración es una sola para todo el grupo de empresas.
+
+| Campo | Regla |
+| --- | --- |
+| Nombre | Obligatorio para activar; no se repite entre los atributos activos del mismo documento y nivel |
+| Texto de ayuda | Opcional; se muestra debajo del campo |
+| Lista de valores | Solo atributos de texto, uno por línea, sin repetidos; el usuario elige de la lista |
+| Valor por defecto | Opcional; del tipo del atributo y, si hay lista, uno de sus valores |
+| Copiar al documento siguiente | Atributo activo del documento siguiente, del mismo tipo y nivel. Dos atributos no pueden copiarse al mismo destino. No se desactiva un atributo que recibe una copia |
+
+La pantalla muestra una **vista previa** de los campos tal como los verá el usuario. Permiso: `seguridad.atributo.editar` (rol Configurador del sistema). Todo cambio queda en la auditoría.
 
 ### Auditoría
 

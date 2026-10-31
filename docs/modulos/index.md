@@ -16,5 +16,5 @@ Cada módulo se documenta con esta plantilla:
 | Seguridad | [Disponible](seguridad.md) |
 | Maestros | [Disponible](maestros.md) · carga desde Excel pendiente |
 | Contabilidad base | [Disponible](contabilidad.md) |
-| Solicitudes de compra | Semana 4 |
+| Solicitudes de compra | Semana 4 (con atributos adicionales, [ADR-005](../adr/0005-atributos-adicionales.md)) |
 | Compras | Semana 5 |
