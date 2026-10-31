@@ -82,6 +82,10 @@ class Usuario(ConAuditoria, Base):
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     es_administrador: Mapped[bool] = mapped_column(Boolean, default=False)
     ultimo_acceso: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Jefe inmediato: aprueba las solicitudes con reglas "jefe del solicitante"
+    jefe_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("seg_usuario.id"), nullable=True
+    )
 
     roles: Mapped[list[Rol]] = relationship(secondary=seg_usuario_rol, lazy="selectin")
 

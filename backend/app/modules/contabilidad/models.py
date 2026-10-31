@@ -7,6 +7,7 @@ from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, UniqueCons
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, ConAuditoria
+from app.modules.seguridad.models import Usuario
 
 
 class Cuenta(ConAuditoria, Base):
@@ -68,8 +69,20 @@ class CentroCosto(ConAuditoria, Base):
     unidad_negocio_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_unidad_negocio.id"))
     codigo: Mapped[str] = mapped_column(String(20))
     nombre: Mapped[str] = mapped_column(String(150))
-    responsable: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    responsable: Mapped[str | None] = mapped_column(
+        String(150), nullable=True
+    )  # texto libre (anterior)
+    # Usuario responsable: aprueba las solicitudes con reglas "responsable del centro de costo"
+    responsable_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("seg_usuario.id"), nullable=True
+    )
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    responsable_usuario: Mapped[Usuario | None] = relationship(lazy="joined")
+
+    @property
+    def responsable_nombre(self) -> str | None:
+        return self.responsable_usuario.nombre if self.responsable_usuario else self.responsable
 
 
 class Impuesto(ConAuditoria, Base):

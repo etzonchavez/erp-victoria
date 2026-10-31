@@ -10,6 +10,8 @@ import Impuestos from "./paginas/Impuestos";
 import PerfilesContables from "./paginas/PerfilesContables";
 import PlanCuentas from "./paginas/PlanCuentas";
 import Proveedores from "./paginas/Proveedores";
+import ReglasAprobacion from "./paginas/ReglasAprobacion";
+import Solicitudes from "./paginas/Solicitudes";
 import Empresas from "./paginas/Empresas";
 import Monedas from "./paginas/Monedas";
 import Unidades from "./paginas/Unidades";
@@ -21,8 +23,8 @@ import Usuarios from "./paginas/Usuarios";
 import { AvisosProvider } from "./avisos";
 import { SesionProvider, useSesion } from "./sesion";
 
-// permiso: uno, o varios (basta con tener alguno)
-type Ruta = { ruta: string; nombre: string; permiso: string | string[]; pagina: () => ReactNode };
+// permiso: uno, o varios (basta con tener alguno); sin permiso = todo usuario del módulo
+type Ruta = { ruta: string; nombre: string; permiso?: string | string[]; pagina: () => ReactNode };
 
 /**
  * Cada módulo agrega aquí sus pantallas. El menú muestra solo las que el usuario puede ver.
@@ -30,6 +32,15 @@ type Ruta = { ruta: string; nombre: string; permiso: string | string[]; pagina: 
  * - grupo "administracion": configuración del ERP; van plegadas en "Administración" al pie del menú.
  */
 const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[] }[] = [
+  {
+    modulo: "solicitudes",
+    grupo: "negocio",
+    rutas: [
+      // Sin permiso: cualquiera puede ser aprobador; la pantalla muestra lo que le corresponde
+      { ruta: "solicitudes", nombre: "Solicitudes de compra", pagina: () => <Solicitudes /> },
+      { ruta: "reglas-aprobacion", nombre: "Reglas de aprobación", permiso: "solicitudes.regla.ver", pagina: () => <ReglasAprobacion /> },
+    ],
+  },
   {
     modulo: "maestros",
     grupo: "negocio",
@@ -130,7 +141,7 @@ function Aplicacion() {
     .map((s) => ({
       ...s,
       nombre: sesion.modulos.find((m) => m.codigo === s.modulo)?.nombre ?? s.modulo,
-      rutas: s.rutas.filter((r) => (Array.isArray(r.permiso) ? r.permiso.some(puede) : puede(r.permiso))),
+      rutas: s.rutas.filter((r) => (!r.permiso ? true : Array.isArray(r.permiso) ? r.permiso.some(puede) : puede(r.permiso))),
     }))
     .filter((s) => s.rutas.length > 0);
   const negocio = secciones.filter((s) => s.grupo === "negocio");

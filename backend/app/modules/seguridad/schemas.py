@@ -102,6 +102,7 @@ class UsuarioCrear(BaseModel):
     password: str = Field(min_length=8, max_length=100)
     es_administrador: bool = False
     roles: list[uuid.UUID] = []
+    jefe_id: uuid.UUID | None = None
 
 
 class UsuarioCambio(BaseModel):
@@ -110,6 +111,7 @@ class UsuarioCambio(BaseModel):
     activo: bool | None = None
     es_administrador: bool | None = None
     roles: list[uuid.UUID] | None = None
+    jefe_id: uuid.UUID | None = None
 
 
 class UsuarioSalida(Esquema):
@@ -119,7 +121,16 @@ class UsuarioSalida(Esquema):
     activo: bool
     es_administrador: bool
     ultimo_acceso: datetime | None
+    jefe_id: uuid.UUID | None = None
     roles: list[RolResumen]
+
+
+class Opcion(BaseModel):
+    """Elemento para listas de selección (usuarios, roles)."""
+
+    id: uuid.UUID
+    nombre: str
+    detalle: str | None = None
 
 
 class Sesion(BaseModel):

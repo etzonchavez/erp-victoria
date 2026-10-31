@@ -16,5 +16,5 @@ Cada módulo se documenta con esta plantilla:
 | Seguridad | [Disponible](seguridad.md) |
 | Maestros | [Disponible](maestros.md) · incluye carga desde Excel |
 | Contabilidad base | [Disponible](contabilidad.md) |
-| Solicitudes de compra | Semana 4 (con atributos adicionales, [ADR-005](../adr/0005-atributos-adicionales.md)) |
+| Solicitudes de compra | [Disponible](solicitudes.md) · aprobación configurable ([ADR-006](../adr/0006-motor-de-aprobacion.md)) |
 | Compras | Semana 5 |

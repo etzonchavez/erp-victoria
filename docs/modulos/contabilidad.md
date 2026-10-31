@@ -92,9 +92,9 @@ Un artículo puede usar, en una empresa, un perfil distinto al de su categoría:
 | Código | Mayúsculas, números, `-` o `_`, hasta 20; único en la empresa |
 | Nombre | Obligatorio |
 | Unidad de negocio | Obligatoria, activa y de la misma empresa |
-| Responsable | Opcional |
+| Responsable | Opcional; un usuario del ERP. Aprueba las solicitudes cuando la regla dice «Responsable del centro de costo» |
 
-Cada línea de solicitud llevará un centro de costo (Semana 4).
+Cada línea de solicitud se reparte entre uno o varios centros de costo ([Solicitudes](solicitudes.md)).
 
 ### Impuestos
 

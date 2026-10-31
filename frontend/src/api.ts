@@ -74,6 +74,8 @@ export type CentroCosto = {
   codigo: string;
   nombre: string;
   responsable: string | null;
+  responsable_id: string | null;
+  responsable_nombre: string | null;
   activo: boolean;
 };
 export type Impuesto = { id: string; codigo: string; nombre: string; tasa: string; cuenta: CuentaResumen | null; activo: boolean };
@@ -248,7 +250,123 @@ export type Usuario = {
   activo: boolean;
   es_administrador: boolean;
   ultimo_acceso: string | null;
+  jefe_id: string | null;
   roles: RolResumen[];
+};
+/** Elemento de lista de selección (usuarios, roles). */
+export type Opcion = { id: string; nombre: string; detalle: string | null };
+
+// Solicitudes y aprobación
+export type OpcionCodigo = { codigo: string; nombre: string };
+export type OpcionId = { id: string; codigo: string; nombre: string };
+export type CatalogoAprobacion = {
+  modos: OpcionCodigo[];
+  tipos_aprobador: OpcionCodigo[];
+  estados: OpcionCodigo[];
+  max_niveles: number;
+};
+export type Condiciones = {
+  unidad_negocio_id: string | null;
+  categoria_id: string | null;
+  centro_costo_id: string | null;
+};
+export type AprobadorRegla = Condiciones & {
+  tipo: string;
+  usuario_id: string | null;
+  rol_id: string | null;
+  descripcion?: string;
+};
+export type NivelRegla = { numero?: number; monto_desde: string; modo: string; aprobadores: AprobadorRegla[] };
+export type ReglaAprobacion = Condiciones & {
+  id: string;
+  empresa_id: string;
+  nombre: string;
+  prioridad: number;
+  activo: boolean;
+  tipo_articulo: string | null;
+  condiciones: string;
+  niveles: NivelRegla[];
+};
+export type OpcionesEmpresa = {
+  unidades: OpcionId[];
+  centros: OpcionId[];
+  categorias: OpcionId[];
+  tipos_articulo: OpcionCodigo[];
+};
+export type ArticuloOpcion = {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  tipo: string;
+  unidad: string;
+  unidades: { unidad: string; factor: string }[];
+  precio_referencial: string | null;
+  moneda_precio: string | null;
+};
+export type SolicitudResumen = {
+  id: string;
+  numero: string;
+  titulo: string;
+  fecha: string;
+  fecha_requerida: string | null;
+  empresa_id: string;
+  unidad_negocio_id: string;
+  unidad_negocio: string;
+  solicitante_id: string;
+  solicitante: string;
+  moneda: string;
+  total: string;
+  total_funcional: string;
+  estado: string;
+  pendiente_de: string[];
+};
+export type DistribucionSolicitud = {
+  centro_costo_id: string;
+  centro_costo: string;
+  porcentaje: string;
+  monto: string;
+  atributos: Record<string, string | null>;
+};
+export type LineaSolicitud = {
+  numero: number;
+  articulo_id: string;
+  articulo: string;
+  descripcion: string;
+  cantidad: string;
+  unidad: string;
+  cantidad_base: string;
+  unidad_base: string;
+  precio: string;
+  subtotal: string;
+  cuenta: string | null;
+  distribuciones: DistribucionSolicitud[];
+  atributos: Record<string, string | null>;
+};
+export type PasoAprobacion = {
+  ronda: number;
+  regla_nombre: string;
+  nivel: number;
+  modo: string;
+  orden: number;
+  descripcion: string;
+  estado: string;
+  motivo: string | null;
+  actuado_por_nombre: string | null;
+  actuado_en: string | null;
+  comentario: string | null;
+};
+export type Solicitud = SolicitudResumen & {
+  justificacion: string | null;
+  tipo_cambio: string;
+  ronda: number;
+  lineas: LineaSolicitud[];
+  atributos: Record<string, string | null>;
+  pasos: PasoAprobacion[];
+  acciones: { editar: boolean; enviar: boolean; aprobar: boolean; anular: boolean };
+};
+export type RutaAprobacion = {
+  regla: string;
+  niveles: { numero: number; modo: string; monto_desde: string; pasos: { descripcion: string; estado: string; motivo: string | null }[] }[];
 };
 export type Sesion = { usuario: Usuario; permisos: string[]; modulos: Modulo[] };
 export type EventoAuditoria = {

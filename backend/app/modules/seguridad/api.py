@@ -21,6 +21,7 @@ from app.modules.seguridad.schemas import (
     LoginEntrada,
     ModuloCambio,
     ModuloSalida,
+    Opcion,
     PermisoSalida,
     PersonalizacionCambio,
     PersonalizacionSalida,
@@ -185,6 +186,20 @@ def crear_usuario(
     db: Session = Depends(get_db),
 ):
     return service.crear_usuario(db, actor, datos.model_dump())
+
+
+@router.get(
+    "/opciones/usuarios",
+    response_model=list[Opcion],
+    summary="Usuarios activos para listas de selección (responsables, aprobadores)",
+)
+def opciones_usuarios(_: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)):
+    return service.opciones_usuarios(db)
+
+
+@router.get("/opciones/roles", response_model=list[Opcion], summary="Roles activos para listas")
+def opciones_roles(_: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)):
+    return service.opciones_roles(db)
 
 
 @router.get("/usuarios/{usuario_id}", response_model=UsuarioSalida, summary="Detalle de usuario")

@@ -81,6 +81,8 @@ class CentroSalida(Esquema):
     codigo: str
     nombre: str
     responsable: str | None
+    responsable_id: uuid.UUID | None
+    responsable_nombre: str | None
     activo: bool
 
 
@@ -89,12 +91,14 @@ class CentroCrear(BaseModel):
     codigo: str = Field(min_length=1, max_length=20)
     nombre: str = Field(min_length=2, max_length=150)
     responsable: str | None = Field(default=None, max_length=150)
+    responsable_id: uuid.UUID | None = None
 
 
 class CentroCambio(BaseModel):
     unidad_negocio_id: uuid.UUID | None = None
     nombre: str | None = Field(default=None, min_length=2, max_length=150)
     responsable: str | None = Field(default=None, max_length=150)
+    responsable_id: uuid.UUID | None = None
     activo: bool | None = None
 
 

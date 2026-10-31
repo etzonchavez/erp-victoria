@@ -15,7 +15,7 @@ Victoria ERP es un sistema de gestión empresarial en la nube, modular y configu
 | --- | --- |
 | Seguridad (usuarios, roles, permisos, acceso por empresa y unidad de negocio) | Disponible |
 | Maestros | Disponible: empresas, monedas, tipo de cambio, unidades, categorías, proveedores, artículos y carga desde Excel |
-| Solicitudes de compra | Planificado |
+| Solicitudes de compra | Disponible: hasta 3 niveles de aprobación configurables, en serie o en paralelo |
 | Compras | Planificado |
 | Inventarios | 2027 |
 | Cuentas por pagar | 2027 |

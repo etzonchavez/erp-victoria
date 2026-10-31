@@ -103,6 +103,7 @@ Permisos del módulo:
 | Nombre completo | Obligatorio, de 2 a 150 caracteres |
 | Contraseña | Mínimo 8 caracteres; al editar, si se deja vacía no cambia |
 | Roles | Opcional; uno o varios |
+| Jefe inmediato | Opcional; otro usuario activo, sin formar ciclos. Aprueba sus solicitudes cuando la regla dice «Jefe del solicitante» |
 | Administrador | Solo visible para administradores |
 | Usuario activo | Un usuario inactivo no puede ingresar |
 

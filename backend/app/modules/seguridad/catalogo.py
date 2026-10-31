@@ -92,6 +92,15 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("contabilidad.centro_costo.editar", "Crear y editar centros de costo"),
     PermisoDef("contabilidad.impuesto.ver", "Ver impuestos"),
     PermisoDef("contabilidad.impuesto.editar", "Crear y editar impuestos"),
+    # Solicitudes de compra. Para aprobar no hace falta permiso: aprueba quien la regla designa.
+    PermisoDef("solicitudes.solicitud.crear", "Registrar y enviar solicitudes propias"),
+    PermisoDef(
+        "solicitudes.solicitud.ver",
+        "Ver todas las solicitudes de las empresas y unidades a las que tiene acceso",
+    ),
+    PermisoDef("solicitudes.solicitud.anular", "Anular solicitudes aprobadas sin orden de compra"),
+    PermisoDef("solicitudes.regla.ver", "Ver las reglas de aprobación"),
+    PermisoDef("solicitudes.regla.editar", "Crear y editar las reglas de aprobación"),
 ]
 
 
@@ -284,5 +293,37 @@ ROLES_ESTANDAR: list[RolDef] = [
             "contabilidad.centro_costo.ver",
             "contabilidad.impuesto.ver",
         ],
+    ),
+    RolDef(
+        "ERP_SOL_ADMINISTRADOR",
+        "solicitudes",
+        "Administrador de solicitudes",
+        "administrador",
+        "Configura las reglas de aprobación, ve todas las solicitudes y anula las aprobadas.",
+        [p.codigo for p in PERMISOS if p.modulo == "solicitudes"],
+    ),
+    RolDef(
+        "ERP_SOL_CONFIGURADOR",
+        "solicitudes",
+        "Configurador de aprobaciones",
+        "configuracion",
+        "Define quién aprueba las solicitudes: niveles, montos, modo y responsables.",
+        ["solicitudes.regla.ver", "solicitudes.regla.editar", "solicitudes.solicitud.ver"],
+    ),
+    RolDef(
+        "ERP_SOL_SOLICITANTE",
+        "solicitudes",
+        "Solicitante",
+        "operativo",
+        "Registra y envía sus solicitudes de compra y sigue su aprobación.",
+        ["solicitudes.solicitud.crear"],
+    ),
+    RolDef(
+        "ERP_SOL_CONSULTA",
+        "solicitudes",
+        "Consulta de solicitudes",
+        "consulta",
+        "Consulta las solicitudes y las reglas de aprobación sin poder cambiarlas.",
+        ["solicitudes.solicitud.ver", "solicitudes.regla.ver"],
     ),
 ]

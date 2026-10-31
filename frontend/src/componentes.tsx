@@ -6,11 +6,14 @@ export function Panel({
   abierto,
   onCerrar,
   children,
+  ancho = false,
 }: {
   titulo: string;
   abierto: boolean;
   onCerrar: () => void;
   children: ReactNode;
+  /** Panel ancho para documentos con líneas (solicitudes, órdenes). */
+  ancho?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -23,7 +26,7 @@ export function Panel({
   if (!abierto) return null;
   return (
     <div className="panel-fondo" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
-      <aside className="panel" role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
+      <aside className={ancho ? "panel panel-ancho" : "panel"} role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
         <header className="panel-cabecera">
           <h2>{titulo}</h2>
           <button className="boton-icono" onClick={onCerrar} aria-label="Cerrar">
@@ -176,3 +179,7 @@ export const fechaDia = (iso: string) => {
   const [a, m, d] = iso.split("-").map(Number);
   return new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(new Date(a, m - 1, d));
 };
+
+/** Monto con separador de miles y 2 decimales: 12,345.60 */
+export const monto = (valor: string | number, moneda?: string) =>
+  `${moneda ? moneda + " " : ""}${new Intl.NumberFormat("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(valor))}`;

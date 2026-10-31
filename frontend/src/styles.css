@@ -359,3 +359,46 @@ textarea { resize: vertical; font: inherit; }
 .pasos-carga .bloque { gap: 12px; }
 .resultado-carga .aviso { margin-bottom: 0; }
 input[type="file"] { padding: 8px; }
+
+/* ---------- solicitudes y aprobación ---------- */
+.panel.panel-ancho { width: min(1040px, 100%); }
+.etiqueta-sol { font-weight: 500; white-space: nowrap; }
+.sol-borrador { background: #eef1f6; color: var(--texto-tenue); }
+.sol-en_aprobacion { background: #e7eefb; color: #1f4fa3; }
+.sol-devuelta { background: #fff4e0; color: #7a4b00; }
+.sol-rechazada { background: var(--alerta-claro); color: var(--alerta); }
+.sol-aprobada, .sol-atendida, .sol-parcialmente_atendida { background: var(--sello-claro); color: var(--sello); }
+.sol-anulada { background: #eef1f6; color: var(--texto-tenue); text-decoration: line-through; }
+.tabla td.numero, .tabla th.numero { text-align: right; font-variant-numeric: tabular-nums; }
+.linea-sol { border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px; display: grid; gap: 12px; background: #fbfcfd; }
+.linea-sol-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.linea-sol-cabecera h4 { margin: 0; font-size: 15px; }
+.reparto { display: grid; gap: 8px; padding-left: 12px; border-left: 3px solid var(--linea); }
+.reparto .fila-formulario label { flex: 1 1 160px; }
+.reparto .fila-formulario label.porcentaje { flex: 0 0 110px; }
+.total-sol { display: flex; justify-content: flex-end; gap: 12px; font-size: 17px; }
+.total-sol strong { font-variant-numeric: tabular-nums; }
+.ruta { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ruta-nivel { border: 1px solid var(--linea); border-radius: var(--radio); padding: 12px 14px; display: grid; gap: 8px; }
+.ruta-nivel header { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--texto-tenue); }
+.ruta-nivel header strong { color: var(--texto); }
+.paso { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: start; font-size: 14px; }
+.paso::before { content: ""; width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; background: #b3bccb; }
+.paso-pendiente::before { background: #1f4fa3; box-shadow: 0 0 0 3px #e7eefb; }
+.paso-aprobado::before { background: var(--sello); }
+.paso-rechazado::before, .paso-devuelto::before { background: var(--alerta); }
+.paso-omitido, .paso-cancelado { color: var(--texto-tenue); }
+.paso p { margin: 2px 0 0; color: var(--texto-tenue); font-size: 13px; }
+.paso-estado { font-size: 13px; white-space: nowrap; }
+.nivel-regla { border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px; display: grid; gap: 12px; }
+.nivel-regla h4 { margin: 0; font-size: 15px; }
+.aprobador-regla { display: grid; gap: 8px; padding: 10px 12px; background: #fbfcfd; border: 1px solid var(--linea); border-radius: var(--radio); }
+.niveles-resumen { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.decision { display: grid; gap: 10px; padding: 14px; border: 1px solid #c9d6ef; background: #f4f7fd; border-radius: var(--radio); }
+.contador { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 6px; border-radius: 99px; background: #1f4fa3; color: #fff; font-size: 12px; text-align: center; }
+.boton-peligro { color: var(--alerta); border-color: #e6b8b4; }
+.boton-peligro:hover:not(:disabled) { background: var(--alerta-claro); }
+.buscador-articulo { display: grid; gap: 6px; }
+.buscador-articulo .lista-simple { margin: 0; padding: 4px 0; list-style: none; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--superficie); max-height: 240px; overflow-y: auto; }
+.buscador-articulo .lista-simple li { padding: 4px 12px; }
+.buscador-articulo .lista-simple button { text-align: left; width: 100%; }

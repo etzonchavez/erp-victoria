@@ -12,9 +12,10 @@ type Formulario = {
   activo: boolean;
   es_administrador: boolean;
   roles: string[];
+  jefe_id: string;
 };
 
-const VACIO: Formulario = { email: "", nombre: "", password: "", activo: true, es_administrador: false, roles: [] };
+const VACIO: Formulario = { email: "", nombre: "", password: "", activo: true, es_administrador: false, roles: [], jefe_id: "" };
 
 export default function Usuarios() {
   const { sesion, puede, recargar } = useSesion();
@@ -57,6 +58,7 @@ export default function Usuarios() {
             activo: u.activo,
             es_administrador: u.es_administrador,
             roles: u.roles.map((r) => r.id),
+            jefe_id: u.jefe_id ?? "",
           },
     );
   };
@@ -68,9 +70,14 @@ export default function Usuarios() {
     setErrorForm(null);
     try {
       if (editando === "nuevo") {
-        await api("/seguridad/usuarios", { metodo: "POST", cuerpo: form });
+        await api("/seguridad/usuarios", { metodo: "POST", cuerpo: { ...form, jefe_id: form.jefe_id || null } });
       } else if (editando) {
-        const cambios: Partial<Formulario> = { nombre: form.nombre, activo: form.activo, roles: form.roles };
+        const cambios: Partial<Omit<Formulario, "jefe_id">> & { jefe_id: string | null } = {
+          nombre: form.nombre,
+          activo: form.activo,
+          roles: form.roles,
+          jefe_id: form.jefe_id || null,
+        };
         if (form.password) cambios.password = form.password;
         if (sesion?.usuario.es_administrador) cambios.es_administrador = form.es_administrador;
         await api(`/seguridad/usuarios/${editando.id}`, { metodo: "PATCH", cuerpo: cambios });
@@ -169,6 +176,23 @@ export default function Usuarios() {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required={nuevo}
             />
+          </label>
+
+          <label>
+            <span>
+              Jefe inmediato <span className="tenue">(opcional)</span>
+            </span>
+            <select value={form.jefe_id} onChange={(e) => setForm({ ...form, jefe_id: e.target.value })}>
+              <option value="">Sin jefe registrado</option>
+              {usuarios
+                .filter((u) => u.activo && (editando === "nuevo" || u.id !== editando?.id))
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nombre}
+                  </option>
+                ))}
+            </select>
+            <small>Aprueba sus solicitudes cuando la regla de aprobación dice «Jefe del solicitante».</small>
           </label>
 
           {roles.length > 0 && (

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { api, type CentroCosto } from "../api";
+import { api, type CentroCosto, type Opcion } from "../api";
 import { useAvisos } from "../avisos";
 import { BotonAccion, Encabezado, Estado, MensajeError, Panel } from "../componentes";
 import { SelectorEmpresa, SinEmpresa, useEmpresaActiva } from "../empresa";
 import { useSesion } from "../sesion";
 
-type Formulario = { codigo: string; nombre: string; unidad_negocio_id: string; responsable: string; activo: boolean };
+type Formulario = { codigo: string; nombre: string; unidad_negocio_id: string; responsable_id: string; activo: boolean };
 
 export default function CentrosCosto() {
   const { puede } = useSesion();
@@ -15,7 +15,11 @@ export default function CentrosCosto() {
   const [centros, setCentros] = useState<CentroCosto[]>([]);
   const [error, setError] = useState<unknown>(null);
   const [editando, setEditando] = useState<CentroCosto | "nuevo" | null>(null);
-  const [form, setForm] = useState<Formulario>({ codigo: "", nombre: "", unidad_negocio_id: "", responsable: "", activo: true });
+  const [form, setForm] = useState<Formulario>({ codigo: "", nombre: "", unidad_negocio_id: "", responsable_id: "", activo: true });
+  const [usuarios, setUsuarios] = useState<Opcion[]>([]);
+  useEffect(() => {
+    api<Opcion[]>("/seguridad/opciones/usuarios").then(setUsuarios).catch(() => setUsuarios([]));
+  }, []);
   const [errorForm, setErrorForm] = useState<unknown>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -40,8 +44,8 @@ export default function CentrosCosto() {
     setEditando(c);
     setForm(
       c === "nuevo"
-        ? { codigo: "", nombre: "", unidad_negocio_id: unidades.find((u) => u.activo)?.id ?? "", responsable: "", activo: true }
-        : { ...c, responsable: c.responsable ?? "" },
+        ? { codigo: "", nombre: "", unidad_negocio_id: unidades.find((u) => u.activo)?.id ?? "", responsable_id: "", activo: true }
+        : { codigo: c.codigo, nombre: c.nombre, unidad_negocio_id: c.unidad_negocio_id, responsable_id: c.responsable_id ?? "", activo: c.activo },
     );
   };
   const cerrar = useCallback(() => setEditando(null), []);
@@ -56,13 +60,23 @@ export default function CentrosCosto() {
       if (nuevo) {
         await api(`/contabilidad/empresas/${empresa.id}/centros-costo`, {
           metodo: "POST",
-          cuerpo: { codigo: form.codigo, nombre: form.nombre, unidad_negocio_id: form.unidad_negocio_id, responsable: form.responsable },
+          cuerpo: {
+            codigo: form.codigo,
+            nombre: form.nombre,
+            unidad_negocio_id: form.unidad_negocio_id,
+            responsable_id: form.responsable_id || null,
+          },
         });
         avisar(`Centro de costo ${form.codigo.toUpperCase()} creado.`);
       } else if (editando) {
         await api(`/contabilidad/centros-costo/${editando.id}`, {
           metodo: "PATCH",
-          cuerpo: { nombre: form.nombre, unidad_negocio_id: form.unidad_negocio_id, responsable: form.responsable, activo: form.activo },
+          cuerpo: {
+            nombre: form.nombre,
+            unidad_negocio_id: form.unidad_negocio_id,
+            responsable_id: form.responsable_id || null,
+            activo: form.activo,
+          },
         });
         avisar(`Centro de costo ${editando.codigo} guardado.`);
       }
@@ -116,7 +130,7 @@ export default function CentrosCosto() {
                   <td className="fuerte">{c.codigo}</td>
                   <td>{c.nombre}</td>
                   <td>{nombreUnidad(c.unidad_negocio_id)}</td>
-                  <td>{c.responsable ?? <span className="tenue">—</span>}</td>
+                  <td>{c.responsable_nombre ?? <span className="tenue">—</span>}</td>
                   <td>
                     <Estado activo={c.activo} />
                   </td>
@@ -160,7 +174,15 @@ export default function CentrosCosto() {
             <span>
               Responsable <span className="tenue">(opcional)</span>
             </span>
-            <input value={form.responsable} maxLength={150} disabled={!editar} onChange={(e) => setForm({ ...form, responsable: e.target.value })} />
+            <select value={form.responsable_id} disabled={!editar} onChange={(e) => setForm({ ...form, responsable_id: e.target.value })}>
+              <option value="">Sin responsable</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nombre}
+                </option>
+              ))}
+            </select>
+            <small>Aprueba las solicitudes de este centro cuando la regla dice «Responsable del centro de costo».</small>
           </label>
           {!nuevo && (
             <label className="opcion">

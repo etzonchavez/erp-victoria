@@ -17,6 +17,7 @@ from app.modules.seguridad.models import (
     Personalizacion,
     Rol,
     Usuario,
+    seg_usuario_rol,
 )
 
 # ---------------------------------------------------------------- auditoría
@@ -341,6 +342,54 @@ def _roles(db: Session, ids: list[uuid.UUID]) -> list[Rol]:
     return roles
 
 
+def _id(valor: uuid.UUID | None) -> str | None:
+    return str(valor) if valor else None
+
+
+def _jefe(db: Session, usuario_id: uuid.UUID | None, jefe_id: uuid.UUID | None) -> uuid.UUID | None:
+    """Valida el jefe inmediato: usuario activo, distinto y sin formar un ciclo."""
+    if jefe_id is None:
+        return None
+    jefe = db.get(Usuario, jefe_id)
+    if not jefe or not jefe.activo:
+        raise ErrorERP(422, "jefe_invalido", "El jefe inmediato debe ser un usuario activo")
+    actual, vistos = jefe, set()
+    while actual is not None and actual.id not in vistos:
+        if actual.id == usuario_id:
+            raise ErrorERP(
+                422, "jefe_ciclo", "El jefe elegido depende de este usuario: se formaría un ciclo"
+            )
+        vistos.add(actual.id)
+        actual = db.get(Usuario, actual.jefe_id) if actual.jefe_id else None
+    return jefe.id
+
+
+def opciones_usuarios(db: Session) -> list[dict]:
+    q = select(Usuario).where(Usuario.activo.is_(True)).order_by(Usuario.nombre)
+    return [{"id": u.id, "nombre": u.nombre, "detalle": u.email} for u in db.scalars(q)]
+
+
+def opciones_roles(db: Session) -> list[dict]:
+    q = select(Rol).where(Rol.activo.is_(True)).order_by(Rol.codigo)
+    return [{"id": r.id, "nombre": r.nombre, "detalle": r.codigo} for r in db.scalars(q)]
+
+
+def usuarios_con_rol(db: Session, rol_id: uuid.UUID) -> list[Usuario]:
+    rol = db.get(Rol, rol_id)
+    if not rol or not rol.activo:
+        return []
+    q = (
+        select(Usuario)
+        .join(seg_usuario_rol, seg_usuario_rol.c.usuario_id == Usuario.id)
+        .where(seg_usuario_rol.c.rol_id == rol_id, Usuario.activo.is_(True))
+    )
+    return list(db.scalars(q))
+
+
+def tiene_rol(usuario: Usuario, rol_id: uuid.UUID) -> bool:
+    return any(r.id == rol_id and r.activo for r in usuario.roles)
+
+
 def crear_usuario(db: Session, actor: Usuario, datos: dict) -> Usuario:
     email = datos["email"].lower()
     if db.scalar(select(Usuario).where(Usuario.email == email)):
@@ -353,6 +402,7 @@ def crear_usuario(db: Session, actor: Usuario, datos: dict) -> Usuario:
         password_hash=hashear_password(datos["password"]),
         es_administrador=datos.get("es_administrador", False),
         roles=_roles(db, datos.get("roles", [])),
+        jefe_id=_jefe(db, None, datos.get("jefe_id")),
         creado_por=actor.id,
         actualizado_por=actor.id,
     )
@@ -387,6 +437,10 @@ def cambiar_usuario(db: Session, actor: Usuario, usuario_id: uuid.UUID, cambios:
         if campo in cambios and getattr(usuario, campo) != cambios[campo]:
             detalle[campo] = {"antes": getattr(usuario, campo), "despues": cambios[campo]}
             setattr(usuario, campo, cambios[campo])
+    if "jefe_id" in cambios and cambios["jefe_id"] != usuario.jefe_id:
+        nuevo = _jefe(db, usuario.id, cambios["jefe_id"])
+        detalle["jefe_id"] = {"antes": _id(usuario.jefe_id), "despues": _id(nuevo)}
+        usuario.jefe_id = nuevo
     if cambios.get("password"):
         usuario.password_hash = hashear_password(cambios["password"])
         detalle["password"] = "cambiada"

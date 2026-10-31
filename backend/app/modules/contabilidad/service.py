@@ -463,6 +463,23 @@ def _validar_unidad(db: Session, empresa_id: uuid.UUID, unidad_id: uuid.UUID) ->
         raise ErrorERP(422, "unidad_inactiva", f"La unidad de negocio {un.codigo} está inactiva")
 
 
+def _responsable(db: Session, usuario_id: uuid.UUID | None) -> uuid.UUID | None:
+    if usuario_id is None:
+        return None
+    usuario = db.get(Usuario, usuario_id)
+    if not usuario or not usuario.activo:
+        raise ErrorERP(422, "responsable_invalido", "El responsable debe ser un usuario activo")
+    return usuario.id
+
+
+def responsable_de_centro(db: Session, centro_id: uuid.UUID) -> Usuario | None:
+    """Usuario responsable del centro de costo (para las reglas de aprobación)."""
+    cc = obtener_centro(db, centro_id)
+    return (
+        cc.responsable_usuario if cc.responsable_usuario and cc.responsable_usuario.activo else None
+    )
+
+
 def crear_centro(db: Session, actor: Usuario, empresa_id: uuid.UUID, datos: dict) -> CentroCosto:
     empresa = maestros.obtener_empresa(db, empresa_id)
     codigo = datos["codigo"].strip().upper()
@@ -485,6 +502,7 @@ def crear_centro(db: Session, actor: Usuario, empresa_id: uuid.UUID, datos: dict
         codigo=codigo,
         nombre=datos["nombre"].strip(),
         responsable=(datos.get("responsable") or "").strip() or None,
+        responsable_id=_responsable(db, datos.get("responsable_id")),
         creado_por=actor.id,
         actualizado_por=actor.id,
     )
@@ -511,11 +529,16 @@ def cambiar_centro(db: Session, actor: Usuario, centro_id: uuid.UUID, cambios: d
     for campo in ("nombre", "responsable"):
         if isinstance(cambios.get(campo), str):
             cambios[campo] = cambios[campo].strip() or None
-    detalle = _cambios(cc, cambios, ("nombre", "responsable", "unidad_negocio_id", "activo"))
+    if "responsable_id" in cambios:
+        cambios["responsable_id"] = _responsable(db, cambios["responsable_id"])
+    detalle = _cambios(
+        cc, cambios, ("nombre", "responsable", "responsable_id", "unidad_negocio_id", "activo")
+    )
     if detalle:
         cc.actualizado_por = actor.id
         auditar(db, actor, "editar", "centro_costo", cc.id, {"codigo": cc.codigo, **detalle})
         db.commit()
+        db.refresh(cc)
     return cc
 
 
