@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Articulos from "./paginas/Articulos";
 import Atributos from "./paginas/Atributos";
 import Auditoria from "./paginas/Auditoria";
+import CargaExcel from "./paginas/CargaExcel";
 import Categorias from "./paginas/Categorias";
 import CentrosCosto from "./paginas/CentrosCosto";
 import CondicionesPago from "./paginas/CondicionesPago";
@@ -20,7 +21,8 @@ import Usuarios from "./paginas/Usuarios";
 import { AvisosProvider } from "./avisos";
 import { SesionProvider, useSesion } from "./sesion";
 
-type Ruta = { ruta: string; nombre: string; permiso: string; pagina: () => ReactNode };
+// permiso: uno, o varios (basta con tener alguno)
+type Ruta = { ruta: string; nombre: string; permiso: string | string[]; pagina: () => ReactNode };
 
 /**
  * Cada módulo agrega aquí sus pantallas. El menú muestra solo las que el usuario puede ver.
@@ -39,6 +41,12 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
       { ruta: "proveedores", nombre: "Proveedores", permiso: "maestros.proveedor.ver", pagina: () => <Proveedores /> },
       { ruta: "categorias", nombre: "Categorías de artículo", permiso: "maestros.categoria.ver", pagina: () => <Categorias /> },
       { ruta: "condiciones-pago", nombre: "Condiciones de pago", permiso: "maestros.proveedor.ver", pagina: () => <CondicionesPago /> },
+      {
+        ruta: "carga-excel",
+        nombre: "Carga desde Excel",
+        permiso: ["maestros.categoria.editar", "maestros.articulo.crear", "maestros.proveedor.crear", "contabilidad.cuenta.editar"],
+        pagina: () => <CargaExcel />,
+      },
     ],
   },
   {
@@ -122,7 +130,7 @@ function Aplicacion() {
     .map((s) => ({
       ...s,
       nombre: sesion.modulos.find((m) => m.codigo === s.modulo)?.nombre ?? s.modulo,
-      rutas: s.rutas.filter((r) => puede(r.permiso)),
+      rutas: s.rutas.filter((r) => (Array.isArray(r.permiso) ? r.permiso.some(puede) : puede(r.permiso))),
     }))
     .filter((s) => s.rutas.length > 0);
   const negocio = secciones.filter((s) => s.grupo === "negocio");

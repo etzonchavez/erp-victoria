@@ -353,3 +353,9 @@ textarea { resize: vertical; font: inherit; }
 /* ---------- acceso por empresa ---------- */
 .li-acceso > div { flex: 1; display: grid; gap: 8px; }
 .unidades-acceso { display: grid; gap: 6px; padding-left: 26px; }
+
+/* ---------- carga desde Excel ---------- */
+.pasos-carga { display: grid; gap: 16px; }
+.pasos-carga .bloque { gap: 12px; }
+.resultado-carga .aviso { margin-bottom: 0; }
+input[type="file"] { padding: 8px; }

@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.core.config import get_settings
 from app.core.database import database_is_up
 from app.modules.contabilidad.api import router as contabilidad_router
+from app.modules.importacion.api import router as importacion_router
 from app.modules.maestros.api import router as maestros_router
 from app.modules.seguridad.api import router as seguridad_router
 
@@ -26,3 +27,4 @@ def health() -> dict:
 api_router.include_router(seguridad_router, prefix="/seguridad", tags=["seguridad"])
 api_router.include_router(maestros_router, prefix="/maestros", tags=["maestros"])
 api_router.include_router(contabilidad_router, prefix="/contabilidad", tags=["contabilidad"])
+api_router.include_router(importacion_router, prefix="/importacion", tags=["importacion"])

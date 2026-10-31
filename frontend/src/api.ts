@@ -291,7 +291,12 @@ export function guardarToken(token: string | null) {
 
 export async function api<T>(
   ruta: string,
-  opciones: { metodo?: string; cuerpo?: unknown; archivo?: { campo: string; valor: File } } = {},
+  opciones: {
+    metodo?: string;
+    cuerpo?: unknown;
+    archivo?: { campo: string; valor: File };
+    campos?: Record<string, string>;
+  } = {},
 ): Promise<T> {
   const token = leerToken();
   let body: BodyInit | undefined;
@@ -300,6 +305,7 @@ export async function api<T>(
     // Formulario multipart: el navegador pone el Content-Type con su separador
     const form = new FormData();
     form.append(opciones.archivo.campo, opciones.archivo.valor);
+    for (const [k, v] of Object.entries(opciones.campos ?? {})) form.append(k, v);
     body = form;
   } else if (opciones.cuerpo !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -321,4 +327,20 @@ export async function api<T>(
     );
   }
   return datos as T;
+}
+
+/** Descarga un archivo de la API (con la sesión del usuario) y lo guarda en el equipo. */
+export async function descargar(ruta: string, nombre: string): Promise<void> {
+  const token = leerToken();
+  const r = await fetch(`${API_URL}/api/v1${ruta}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!r.ok) {
+    const datos = await r.json().catch(() => null);
+    throw new ErrorApi(r.status, datos?.codigo ?? "error", datos?.mensaje ?? `Error ${r.status}`);
+  }
+  const url = URL.createObjectURL(await r.blob());
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  enlace.click();
+  URL.revokeObjectURL(url);
 }

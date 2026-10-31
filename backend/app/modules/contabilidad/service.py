@@ -226,6 +226,7 @@ def crear_cuenta(
     codigo: str,
     nombre: str,
     naturaleza: str | None,
+    commit: bool = True,
 ) -> Cuenta:
     empresa = maestros.obtener_empresa(db, empresa_id)
     codigo = codigo.strip()
@@ -286,7 +287,8 @@ def crear_cuenta(
         cuenta.id,
         {"empresa": empresa.razon_social, "codigo": codigo, "nombre": cuenta.nombre},
     )
-    db.commit()
+    if commit:
+        db.commit()
     return cuenta
 
 

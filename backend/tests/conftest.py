@@ -6,7 +6,7 @@ os.environ["BOOTSTRAP_ON_STARTUP"] = "false"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy import create_engine, event  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
@@ -23,6 +23,16 @@ def db():
     engine = create_engine(
         "sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
+    # pysqlite no emite BEGIN y rompe los savepoints (la carga desde Excel los usa).
+    # Receta oficial de SQLAlchemy; PostgreSQL no lo necesita.
+    @event.listens_for(engine, "connect")
+    def _sin_autocommit(conexion, _):
+        conexion.isolation_level = None
+
+    @event.listens_for(engine, "begin")
+    def _begin(conexion):
+        conexion.exec_driver_sql("BEGIN")
+
     Base.metadata.create_all(engine)
     Sesion = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     with Sesion() as s:

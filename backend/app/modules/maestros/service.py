@@ -629,7 +629,12 @@ def _altura(db: Session, categoria: Categoria) -> int:
 
 
 def crear_categoria(
-    db: Session, actor: Usuario, codigo: str, nombre: str, padre_id: uuid.UUID | None
+    db: Session,
+    actor: Usuario,
+    codigo: str,
+    nombre: str,
+    padre_id: uuid.UUID | None,
+    commit: bool = True,
 ) -> Categoria:
     codigo = codigo.strip().upper()
     if not CODIGO_CATEGORIA.match(codigo):
@@ -666,7 +671,8 @@ def crear_categoria(
         cat.id,
         {"codigo": codigo, "nombre": cat.nombre, "padre": padre.codigo if padre else None},
     )
-    db.commit()
+    if commit:
+        db.commit()
     return cat
 
 
@@ -875,7 +881,7 @@ def obtener_proveedor(db: Session, proveedor_id: uuid.UUID) -> Proveedor:
     return p
 
 
-def crear_proveedor(db: Session, actor: Usuario, datos: dict) -> Proveedor:
+def crear_proveedor(db: Session, actor: Usuario, datos: dict, commit: bool = True) -> Proveedor:
     tipo = datos["tipo_documento"].upper()
     numero, pais_proveedor = _validar_documento(tipo, datos["numero_documento"], datos.get("pais"))
     existente = db.scalar(
@@ -930,7 +936,8 @@ def crear_proveedor(db: Session, actor: Usuario, datos: dict) -> Proveedor:
             "razon_social": prov.razon_social,
         },
     )
-    db.commit()
+    if commit:
+        db.commit()
     db.refresh(prov)
     return prov
 
@@ -993,7 +1000,7 @@ def _quitar_principal(prov: Proveedor, excepto: ContactoProveedor | None = None)
 
 
 def crear_contacto(
-    db: Session, actor: Usuario, proveedor_id: uuid.UUID, datos: dict
+    db: Session, actor: Usuario, proveedor_id: uuid.UUID, datos: dict, commit: bool = True
 ) -> ContactoProveedor:
     prov = obtener_proveedor(db, proveedor_id)
     contacto = ContactoProveedor(
@@ -1023,7 +1030,8 @@ def crear_contacto(
             "principal": contacto.principal,
         },
     )
-    db.commit()
+    if commit:
+        db.commit()
     return contacto
 
 
@@ -1340,7 +1348,7 @@ def _validar_datos_articulo(db: Session, datos: dict, actual: Articulo | None = 
         datos["moneda_precio"] = obtener_moneda(db, datos["moneda_precio"]).codigo
 
 
-def crear_articulo(db: Session, actor: Usuario, datos: dict) -> Articulo:
+def crear_articulo(db: Session, actor: Usuario, datos: dict, commit: bool = True) -> Articulo:
     _validar_datos_articulo(db, datos)
     codigo = (datos.get("codigo") or "").strip().upper() or siguiente_codigo(
         db, datos["categoria_id"]
@@ -1381,7 +1389,8 @@ def crear_articulo(db: Session, actor: Usuario, datos: dict) -> Articulo:
         art.id,
         {"codigo": codigo, "descripcion": art.descripcion, "tipo": art.tipo},
     )
-    db.commit()
+    if commit:
+        db.commit()
     return art
 
 

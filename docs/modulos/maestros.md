@@ -1,6 +1,6 @@
 # Maestros
 
-**Versión:** 0.10.0 · **Estado:** disponible (empresas, monedas, tipo de cambio, unidades, categorías, proveedores y artículos); carga desde Excel pendiente
+**Versión:** 0.13.0 · **Estado:** disponible (empresas, monedas, tipo de cambio, unidades, categorías, proveedores, artículos y carga desde Excel)
 
 ## 1. Objetivo del módulo
 
@@ -26,7 +26,6 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | `maestros.condicion_pago.editar` | Condiciones de pago |
 | `maestros.categoria.ver` / `.editar` | Ver / crear, mover y editar el árbol de categorías (el perfil contable lo asigna Contabilidad) |
 | `maestros.articulo.ver` / `.crear` / `.editar` | Ver artículos y su configuración contable por empresa / registrarlos / editarlos con sus unidades alternativas |
-| `maestros.importacion.ejecutar` | Carga desde Excel |
 
 ## 3. Flujo de configuración
 
@@ -170,6 +169,31 @@ Los proveedores son **compartidos por todas las empresas**: un mismo documento s
 
 Vienen precargadas: Contado, Crédito 15, 30, 45 y 60 días. Se pueden crear otras (código, nombre y días de crédito). No se desactiva una condición mientras la use algún proveedor activo.
 
+### Carga desde Excel
+
+Para la puesta en marcha, en **Maestros › Carga desde Excel** se cargan muchos registros a la vez:
+
+| Qué se carga | Permiso que necesita | Alcance |
+|---|---|---|
+| Categorías de artículo | `maestros.categoria.editar` | Grupo |
+| Artículos | `maestros.articulo.crear` | Grupo |
+| Proveedores (con su contacto principal) | `maestros.proveedor.crear` | Grupo |
+| Plan de cuentas | `contabilidad.cuenta.editar` | Una empresa (a la que el usuario tenga acceso) |
+
+Pasos:
+
+1. Elegir qué se carga y **descargar la plantilla**. La hoja *Datos* tiene las columnas; la hoja *Instrucciones* explica cada una y trae un ejemplo.
+2. Subir el archivo y pulsar **Validar archivo**. Cada fila pasa por las mismas reglas que la pantalla (perfil contable del artículo, RUC, categoría padre, etc.) y la tabla muestra el error de cada fila.
+3. Si no hay errores se habilita **Cargar N filas**. La carga es **todo o nada**: si alguna fila falla, no se guarda ninguna.
+
+Reglas:
+
+- Hasta 5000 filas y 5 MB por archivo, solo `.xlsx`.
+- Las filas se procesan en orden: una categoría puede tener como padre otra que está más arriba en el mismo archivo.
+- Los DNI que Excel guardó sin ceros a la izquierda se completan a 8 dígitos.
+- Las **cuentas bancarias de proveedores no se cargan por Excel**: se registran una por una en la ficha, por quien tiene `maestros.proveedor.banco`.
+- La carga queda en la auditoría como una sola acción ("importar") con el tipo y el número de filas.
+
 ## 5. Reglas de negocio
 
 - Un artículo no se guarda si su perfil no se resuelve o si el tipo del perfil no coincide con el del artículo.
@@ -196,5 +220,7 @@ La plantilla contable, los impuestos y las unidades de medida precargadas vienen
 **Hoy es feriado y no hay tipo de cambio, ¿qué pasa?** El ERP toma el último registrado antes de esa fecha.
 
 **¿Puedo cambiar el RUC de una empresa mal registrada?** No. Desactívala y crea la empresa correcta; así la auditoría conserva la historia.
+
+**Cargué un Excel y una fila tenía error, ¿se guardó la mitad?** No. Corrige esa fila, vuelve a validar y carga de nuevo: se guarda todo junto.
 
 **¿Qué pasa cuando entre en vigencia el PCGE 2026?** Se agrega la plantilla `PCGE-2026` y el contador reasigna las cuentas de los perfiles; artículos y categorías no cambian.
