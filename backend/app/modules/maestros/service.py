@@ -13,6 +13,7 @@ from app.core.eventos import emitir
 from app.localizacion import PAISES, TIPO_EXTRANJERO, pais
 from app.modules.maestros import datos_base
 from app.modules.maestros.models import (
+    Articulo,
     BloqueoProveedor,
     Categoria,
     CondicionPago,
@@ -23,6 +24,7 @@ from app.modules.maestros.models import (
     Moneda,
     Proveedor,
     TipoCambio,
+    UnidadArticulo,
     UnidadMedida,
     UnidadNegocio,
 )
@@ -1245,3 +1247,233 @@ def proveedor_habilitado(db: Session, proveedor_id: uuid.UUID, empresa_id: uuid.
         return "El proveedor está inactivo"
     bloqueo = next((b for b in prov.bloqueos if b.empresa_id == empresa_id), None)
     return f"Proveedor bloqueado para esta empresa: {bloqueo.motivo}" if bloqueo else None
+
+
+# ---------------------------------------------------------------- artículos
+
+CODIGO_ARTICULO = re.compile(r"^[A-Z0-9][A-Z0-9_.-]{0,29}$")
+
+
+def siguiente_codigo(db: Session, categoria_id: uuid.UUID) -> str:
+    """Siguiente correlativo de la categoría: SUM-OFI-0001, SUM-OFI-0002…"""
+    cat = obtener_categoria(db, categoria_id)
+    prefijo = f"{cat.codigo}-"
+    usados = db.scalars(select(Articulo.codigo).where(Articulo.codigo.startswith(prefijo)))
+    numeros = [int(c[len(prefijo) :]) for c in usados if c[len(prefijo) :].isdigit()]
+    return f"{prefijo}{max(numeros, default=0) + 1:04d}"
+
+
+def buscar_articulos(
+    db: Session,
+    texto: str | None = None,
+    categoria_id: uuid.UUID | None = None,
+    tipo: str | None = None,
+    solo_activos: bool = False,
+    limite: int = 200,
+) -> list[Articulo]:
+    q = select(Articulo).order_by(Articulo.codigo)
+    if texto:
+        patron = f"%{texto.strip()}%"
+        q = q.where(
+            Articulo.codigo.ilike(patron)
+            | Articulo.descripcion.ilike(patron)
+            | Articulo.marca.ilike(patron)
+            | Articulo.modelo.ilike(patron)
+        )
+    if categoria_id:
+        # La categoría y todas sus subcategorías
+        cat = obtener_categoria(db, categoria_id)
+        ids = [cat.id, *(d.id for d in _descendientes(db, cat))]
+        q = q.where(Articulo.categoria_id.in_(ids))
+    if tipo:
+        q = q.where(Articulo.tipo == tipo)
+    if solo_activos:
+        q = q.where(Articulo.activo.is_(True))
+    return list(db.scalars(q.limit(min(limite, 500))))
+
+
+def obtener_articulo(db: Session, articulo_id: uuid.UUID) -> Articulo:
+    a = db.get(Articulo, articulo_id)
+    if not a:
+        raise no_encontrado("El artículo")
+    return a
+
+
+def articulos_de_categorias(db: Session, categoria_ids: list[uuid.UUID]) -> list[Articulo]:
+    if not categoria_ids:
+        return []
+    return list(db.scalars(select(Articulo).where(Articulo.categoria_id.in_(categoria_ids))))
+
+
+def subcategorias(db: Session, categoria_id: uuid.UUID) -> list[Categoria]:
+    """La categoría y todas sus descendientes."""
+    cat = obtener_categoria(db, categoria_id)
+    return [cat, *_descendientes(db, cat)]
+
+
+def _validar_datos_articulo(db: Session, datos: dict, actual: Articulo | None = None) -> None:
+    if "tipo" in datos and datos["tipo"] not in datos_base.TIPOS_ARTICULO:
+        raise ErrorERP(
+            422, "tipo_invalido", f"Tipo no válido: {', '.join(datos_base.TIPOS_ARTICULO)}"
+        )
+    if "categoria_id" in datos:
+        cat = obtener_categoria(db, datos["categoria_id"])
+        if not cat.activo and (not actual or actual.categoria_id != cat.id):
+            raise ErrorERP(422, "categoria_inactiva", f"La categoría {cat.codigo} está inactiva")
+    if "unidad" in datos:
+        unidad = obtener_unidad(db, datos["unidad"])
+        if not unidad.activo and (not actual or actual.unidad != unidad.codigo):
+            raise ErrorERP(422, "unidad_inactiva", f"La unidad {unidad.codigo} está inactiva")
+        datos["unidad"] = unidad.codigo
+    precio = datos.get("precio_referencial", actual.precio_referencial if actual else None)
+    moneda = datos.get("moneda_precio", actual.moneda_precio if actual else None)
+    if (precio is None) != (moneda is None):
+        raise ErrorERP(
+            422, "precio_incompleto", "El precio referencial necesita monto y moneda (o ninguno)"
+        )
+    if precio is not None and precio < 0:
+        raise ErrorERP(422, "precio_invalido", "El precio referencial no puede ser negativo")
+    if datos.get("moneda_precio"):
+        datos["moneda_precio"] = obtener_moneda(db, datos["moneda_precio"]).codigo
+
+
+def crear_articulo(db: Session, actor: Usuario, datos: dict) -> Articulo:
+    _validar_datos_articulo(db, datos)
+    codigo = (datos.get("codigo") or "").strip().upper() or siguiente_codigo(
+        db, datos["categoria_id"]
+    )
+    if not CODIGO_ARTICULO.match(codigo):
+        raise ErrorERP(
+            422,
+            "codigo_invalido",
+            "El código usa mayúsculas, números, punto, guion o guion bajo (hasta 30)",
+        )
+    if db.scalar(select(Articulo.id).where(Articulo.codigo == codigo)):
+        raise ErrorERP(409, "articulo_duplicado", f"Ya existe el artículo {codigo}")
+    art = Articulo(
+        codigo=codigo,
+        descripcion=datos["descripcion"].strip(),
+        tipo=datos["tipo"],
+        categoria_id=datos["categoria_id"],
+        unidad=datos["unidad"],
+        impuesto=(datos.get("impuesto") or "IGV18").strip().upper(),
+        marca=_texto(datos.get("marca")),
+        modelo=_texto(datos.get("modelo")),
+        especificacion=_texto(datos.get("especificacion")),
+        precio_referencial=datos.get("precio_referencial"),
+        moneda_precio=datos.get("moneda_precio"),
+        creado_por=actor.id,
+        actualizado_por=actor.id,
+    )
+    db.add(art)
+    db.flush()
+    db.refresh(art)
+    # Contabilidad verifica que el tipo coincida con el perfil de cada empresa que lo tenga.
+    emitir("validar_articulo", db, art)
+    auditar(
+        db,
+        actor,
+        "crear",
+        "articulo",
+        art.id,
+        {"codigo": codigo, "descripcion": art.descripcion, "tipo": art.tipo},
+    )
+    db.commit()
+    return art
+
+
+def cambiar_articulo(
+    db: Session, actor: Usuario, articulo_id: uuid.UUID, cambios: dict
+) -> Articulo:
+    art = obtener_articulo(db, articulo_id)
+    _validar_datos_articulo(db, cambios, art)
+    for campo in ("marca", "modelo", "especificacion"):
+        if campo in cambios:
+            cambios[campo] = _texto(cambios[campo])
+    if cambios.get("descripcion"):
+        cambios["descripcion"] = cambios["descripcion"].strip()
+    if cambios.get("impuesto"):
+        cambios["impuesto"] = cambios["impuesto"].strip().upper()
+    if cambios.get("unidad") and any(u.unidad == cambios["unidad"] for u in art.unidades_alternas):
+        raise ErrorERP(
+            422,
+            "unidad_repetida",
+            f"{cambios['unidad']} es una unidad alternativa del artículo; quítala primero",
+        )
+    campos = (
+        "descripcion",
+        "tipo",
+        "categoria_id",
+        "unidad",
+        "impuesto",
+        "marca",
+        "modelo",
+        "especificacion",
+        "precio_referencial",
+        "moneda_precio",
+        "activo",
+    )
+    detalle = _cambios(art, cambios, campos)
+    if detalle:
+        db.flush()
+        db.expire(art, ["categoria"])
+        if {"tipo", "categoria_id"} & set(detalle):
+            emitir("validar_articulo", db, art)
+        art.actualizado_por = actor.id
+        auditar(db, actor, "editar", "articulo", art.id, {"codigo": art.codigo, **detalle})
+        db.commit()
+    return art
+
+
+def fijar_unidades_articulo(
+    db: Session, actor: Usuario, articulo_id: uuid.UUID, unidades: list[dict]
+) -> Articulo:
+    """Reemplaza las unidades alternativas: [{"unidad": "CJA", "factor": 12}]."""
+    art = obtener_articulo(db, articulo_id)
+    vistas: set[str] = set()
+    nuevas: list[UnidadArticulo] = []
+    for u in unidades:
+        unidad = obtener_unidad(db, u["unidad"])
+        if unidad.codigo == art.unidad:
+            raise ErrorERP(422, "unidad_base", f"{unidad.codigo} ya es la unidad base del artículo")
+        if unidad.codigo in vistas:
+            raise ErrorERP(422, "unidad_repetida", f"{unidad.codigo} está repetida")
+        if u["factor"] <= 0:
+            raise ErrorERP(422, "factor_invalido", "El factor debe ser mayor que cero")
+        vistas.add(unidad.codigo)
+        nuevas.append(
+            UnidadArticulo(
+                articulo_id=art.id,
+                unidad=unidad.codigo,
+                factor=u["factor"],
+                creado_por=actor.id,
+                actualizado_por=actor.id,
+            )
+        )
+    antes = sorted(f"1 {u.unidad} = {u.factor:g} {art.unidad}" for u in art.unidades_alternas)
+    despues = sorted(f"1 {u.unidad} = {u.factor:g} {art.unidad}" for u in nuevas)
+    if antes != despues:
+        art.unidades_alternas = nuevas
+        art.actualizado_por = actor.id
+        auditar(
+            db,
+            actor,
+            "editar",
+            "articulo",
+            art.id,
+            {"codigo": art.codigo, "unidades": {"antes": antes, "despues": despues}},
+        )
+        db.commit()
+        db.refresh(art)
+    return art
+
+
+def convertir_a_unidad_base(
+    db: Session, articulo: Articulo, cantidad: Decimal, unidad: str
+) -> Decimal:
+    """Pasa a la unidad base: primero unidades propias del artículo, luego las generales."""
+    unidad = unidad.upper()
+    propia = next((u for u in articulo.unidades_alternas if u.unidad == unidad), None)
+    if propia:
+        return cantidad * propia.factor
+    return convertir(db, cantidad, unidad, articulo.unidad)

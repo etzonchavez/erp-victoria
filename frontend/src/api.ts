@@ -143,6 +143,35 @@ export const nombrePais = (codigo: string) => {
   }
 };
 
+// Artículos
+export type ArticuloResumen = {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  tipo: string;
+  categoria: Categoria;
+  unidad: string;
+  precio_referencial: string | null;
+  moneda_precio: string | null;
+  activo: boolean;
+};
+export type Articulo = ArticuloResumen & {
+  impuesto: string;
+  marca: string | null;
+  modelo: string | null;
+  especificacion: string | null;
+  unidades_alternas: { unidad: string; factor: string }[];
+};
+export type EstadoContable = {
+  empresa_id: string;
+  razon_social: string;
+  perfil: PerfilContable | null;
+  origen: string | null;
+  excepcion: boolean;
+  impuesto: { codigo: string; nombre: string; tasa: string } | null;
+  problema: string | null;
+};
+
 export const NOMBRE_TIPO_ARTICULO: Record<string, string> = {
   bien_inventariable: "Bien inventariable",
   bien_no_inventariable: "Bien no inventariable",

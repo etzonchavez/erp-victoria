@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.modules.contabilidad import service
 from app.modules.contabilidad.schemas import (
+    ArticuloPerfilCambio,
     CategoriaPerfilCambio,
     CategoriaPerfilSalida,
     CentroCambio,
@@ -16,6 +17,7 @@ from app.modules.contabilidad.schemas import (
     CuentaCambio,
     CuentaCrear,
     CuentaSalida,
+    EstadoContableEmpresa,
     ImpuestoCambio,
     ImpuestoCrear,
     ImpuestoSalida,
@@ -269,3 +271,47 @@ def sugeridos(
 ):
     empresa = maestros.obtener_empresa(db, empresa_id)
     return service.aplicar_sugeridos(db, actor, empresa)
+
+
+# ---------------------------------------------------------------- artículos
+
+
+@router.get(
+    "/articulos/{articulo_id}/estado",
+    response_model=list[EstadoContableEmpresa],
+    summary="Perfil, cuentas e impuesto del artículo en cada empresa, y si se puede comprar",
+)
+def estado_articulo(
+    articulo_id: uuid.UUID,
+    _: Usuario = Depends(requiere("maestros.articulo.ver")),
+    db: Session = Depends(get_db),
+):
+    # Usa el permiso de maestros: quien ve el artículo ve en qué empresas se puede comprar.
+    return service.estado_contable(db, maestros.obtener_articulo(db, articulo_id))
+
+
+@router.put(
+    "/empresas/{empresa_id}/articulos/{articulo_id}/perfil",
+    response_model=list[EstadoContableEmpresa],
+    summary="Excepción contable del artículo en una empresa (null = usar la de su categoría)",
+)
+def excepcion_articulo(
+    empresa_id: uuid.UUID,
+    articulo_id: uuid.UUID,
+    datos: ArticuloPerfilCambio,
+    actor: Usuario = Depends(requiere("contabilidad.perfil.editar")),
+    db: Session = Depends(get_db),
+):
+    service.asignar_perfil_articulo(db, actor, empresa_id, articulo_id, datos.perfil_id)
+    return service.estado_contable(db, maestros.obtener_articulo(db, articulo_id))
+
+
+@router.get(
+    "/impuestos/codigos",
+    response_model=list[str],
+    summary="Códigos de impuesto usados en alguna empresa (para elegir el del artículo)",
+)
+def codigos_impuesto(
+    _: Usuario = Depends(requiere("maestros.articulo.ver")), db: Session = Depends(get_db)
+):
+    return service.codigos_impuesto(db)

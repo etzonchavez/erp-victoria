@@ -13,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Table,
+    Text,
     UniqueConstraint,
     Uuid,
 )
@@ -209,3 +210,44 @@ class BloqueoProveedor(ConAuditoria, Base):
     proveedor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_proveedor.id"), index=True)
     empresa_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_empresa.id"))
     motivo: Mapped[str] = mapped_column(String(300))
+
+
+class Articulo(ConAuditoria, Base):
+    """Bien o servicio que se compra. Compartido por todas las empresas del grupo.
+
+    Sus cuentas no se guardan aquí: salen del perfil contable de su categoría en cada
+    empresa (o de una excepción que define Contabilidad).
+    """
+
+    __tablename__ = "mae_articulo"
+
+    codigo: Mapped[str] = mapped_column(String(30), unique=True)
+    descripcion: Mapped[str] = mapped_column(String(240), index=True)
+    tipo: Mapped[str] = mapped_column(String(30))  # ver datos_base.TIPOS_ARTICULO
+    categoria_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_categoria.id"), index=True)
+    unidad: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
+    impuesto: Mapped[str] = mapped_column(String(20), default="IGV18")  # código, por empresa
+    marca: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    modelo: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    especificacion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    precio_referencial: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+    moneda_precio: Mapped[str | None] = mapped_column(
+        ForeignKey("mae_moneda.codigo"), nullable=True
+    )
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    categoria: Mapped[Categoria] = relationship(lazy="joined")
+    unidades_alternas: Mapped[list["UnidadArticulo"]] = relationship(
+        lazy="selectin", order_by="UnidadArticulo.unidad", cascade="all, delete-orphan"
+    )
+
+
+class UnidadArticulo(ConAuditoria, Base):
+    """Unidad alternativa propia del artículo: 1 unidad = factor unidades base (1 CJA = 12 UND)."""
+
+    __tablename__ = "mae_articulo_unidad"
+    __table_args__ = (UniqueConstraint("articulo_id", "unidad"),)
+
+    articulo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_articulo.id"), index=True)
+    unidad: Mapped[str] = mapped_column(ForeignKey("mae_unidad_medida.codigo"))
+    factor: Mapped[Decimal] = mapped_column(Numeric(18, 6))

@@ -1,6 +1,6 @@
 # Contabilidad base
 
-**Versión:** 0.8.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos) · Asientos reales: Fase 1 (2027)
+**Versión:** 0.10.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos) · Asientos reales: Fase 1 (2027)
 
 ## 1. Objetivo
 
@@ -80,6 +80,10 @@ Todas las cuentas deben ser imputables, activas y de la misma empresa. El códig
 ### Perfil de cada categoría de artículo
 
 Las categorías de artículo son comunes a todas las empresas ([Maestros](maestros.md#categorias-de-articulo)); cada empresa asigna su perfil contable a cada categoría. Una categoría sin perfil propio hereda el de su categoría padre. Solo quien tiene `contabilidad.perfil.editar` asigna o cambia perfiles, desde **Maestros → Categorías de artículo**. Todo cambio queda en la auditoría con el perfil anterior y el nuevo.
+
+### Excepción contable de un artículo
+
+Un artículo puede usar, en una empresa, un perfil distinto al de su categoría: el contador lo elige en la ficha del artículo (Maestros → Artículos). El perfil debe ser del mismo tipo que el artículo. El orden para encontrar las cuentas de un artículo es: **excepción del artículo → perfil de su categoría → perfil heredado de la categoría padre**.
 
 ### Centros de costo
 

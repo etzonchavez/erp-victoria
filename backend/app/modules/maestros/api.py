@@ -8,13 +8,18 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.localizacion import PAISES
-from app.modules.maestros import service
+from app.modules.maestros import datos_base, service
 from app.modules.maestros.schemas import (
+    ArticuloCambio,
+    ArticuloCrear,
+    ArticuloResumen,
+    ArticuloSalida,
     BloqueoCambio,
     CategoriaCambio,
     CategoriaCrear,
     CategoriaSalida,
     CategoriasCambio,
+    CodigoSugerido,
     CondicionCambio,
     CondicionCrear,
     CondicionSalida,
@@ -43,6 +48,7 @@ from app.modules.maestros.schemas import (
     TipoDocumentoSalida,
     UnidadCambio,
     UnidadCrear,
+    UnidadesArticuloCambio,
     UnidadNegocioCambio,
     UnidadNegocioCrear,
     UnidadNegocioSalida,
@@ -527,3 +533,86 @@ def bloquear_proveedor(
         db, actor, proveedor_id, empresa_id, datos.bloqueado, datos.motivo
     )
     return _proveedor(prov, _ve_banco(db, actor))
+
+
+# ---------------------------------------------------------------- artículos
+
+
+@router.get("/tipos-articulo", summary="Tipos de artículo")
+def tipos_articulo(_: Usuario = Depends(requiere("maestros.articulo.ver"))) -> list[dict]:
+    return [{"codigo": c, "nombre": n} for c, n in datos_base.TIPOS_ARTICULO.items()]
+
+
+@router.get("/articulos", response_model=list[ArticuloResumen], summary="Buscar artículos")
+def articulos(
+    buscar: str | None = None,
+    categoria_id: uuid.UUID | None = None,
+    tipo: str | None = None,
+    solo_activos: bool = False,
+    _: Usuario = Depends(requiere("maestros.articulo.ver")),
+    db: Session = Depends(get_db),
+):
+    return service.buscar_articulos(db, buscar, categoria_id, tipo, solo_activos)
+
+
+@router.get(
+    "/articulos/siguiente-codigo",
+    response_model=CodigoSugerido,
+    summary="Siguiente correlativo de una categoría",
+)
+def siguiente_codigo(
+    categoria_id: uuid.UUID,
+    _: Usuario = Depends(requiere("maestros.articulo.ver")),
+    db: Session = Depends(get_db),
+):
+    return CodigoSugerido(codigo=service.siguiente_codigo(db, categoria_id))
+
+
+@router.post(
+    "/articulos", response_model=ArticuloSalida, status_code=201, summary="Registrar artículo"
+)
+def crear_articulo(
+    datos: ArticuloCrear,
+    actor: Usuario = Depends(requiere("maestros.articulo.crear")),
+    db: Session = Depends(get_db),
+):
+    return service.crear_articulo(db, actor, datos.model_dump())
+
+
+@router.get("/articulos/{articulo_id}", response_model=ArticuloSalida, summary="Ficha")
+def articulo(
+    articulo_id: uuid.UUID,
+    _: Usuario = Depends(requiere("maestros.articulo.ver")),
+    db: Session = Depends(get_db),
+):
+    return service.obtener_articulo(db, articulo_id)
+
+
+@router.patch("/articulos/{articulo_id}", response_model=ArticuloSalida, summary="Editar")
+def cambiar_articulo(
+    articulo_id: uuid.UUID,
+    datos: ArticuloCambio,
+    actor: Usuario = Depends(requiere("maestros.articulo.editar")),
+    db: Session = Depends(get_db),
+):
+    cambios = datos.model_dump(exclude_unset=True)
+    for campo in ("descripcion", "tipo", "categoria_id", "unidad", "impuesto", "activo"):
+        if cambios.get(campo, "") is None:
+            cambios.pop(campo)
+    return service.cambiar_articulo(db, actor, articulo_id, cambios)
+
+
+@router.put(
+    "/articulos/{articulo_id}/unidades",
+    response_model=ArticuloSalida,
+    summary="Unidades alternativas del artículo (reemplaza la lista)",
+)
+def unidades_articulo(
+    articulo_id: uuid.UUID,
+    datos: UnidadesArticuloCambio,
+    actor: Usuario = Depends(requiere("maestros.articulo.editar")),
+    db: Session = Depends(get_db),
+):
+    return service.fijar_unidades_articulo(
+        db, actor, articulo_id, [u.model_dump() for u in datos.unidades]
+    )

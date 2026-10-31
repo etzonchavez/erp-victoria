@@ -1,6 +1,6 @@
 # Maestros
 
-**Versión:** 0.9.0 · **Estado:** empresas, monedas, tipo de cambio, unidades, categorías y proveedores disponibles; artículos en construcción (Semana 3)
+**Versión:** 0.10.0 · **Estado:** disponible (empresas, monedas, tipo de cambio, unidades, categorías, proveedores y artículos); carga desde Excel pendiente
 
 ## 1. Objetivo del módulo
 
@@ -12,7 +12,7 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | --- | --- | --- |
 | `ERP_MAE_ADMINISTRADOR` | administrador | Responsable de datos maestros |
 | `ERP_MAE_CONFIGURADOR` | configuracion | Configura empresas, unidades de negocio, monedas y unidades de medida |
-| `ERP_MAE_ANALISTA` | operativo | Registra proveedores y el tipo de cambio diario; más adelante, artículos |
+| `ERP_MAE_ANALISTA` | operativo | Registra artículos, proveedores y el tipo de cambio diario |
 | `ERP_MAE_CONSULTA` | consulta | Solo consulta |
 
 | Permiso | Permite |
@@ -25,8 +25,7 @@ Registra los datos base que usan todos los procesos: empresa, unidades de negoci
 | `maestros.proveedor.banco` | Ver completas, registrar y desactivar las cuentas bancarias de los proveedores. **No viene en ningún rol estándar salvo el administrador de maestros**: asígnalo solo a tesorería |
 | `maestros.condicion_pago.editar` | Condiciones de pago |
 | `maestros.categoria.ver` / `.editar` | Ver / crear, mover y editar el árbol de categorías (el perfil contable lo asigna Contabilidad) |
-| `maestros.articulo.ver` / `.crear` / `.editar` | Artículos |
-| `maestros.articulo.excepcion_contable` | Asignar a un artículo un perfil distinto al de su categoría (solo roles contables) |
+| `maestros.articulo.ver` / `.crear` / `.editar` | Ver artículos y su configuración contable por empresa / registrarlos / editarlos con sus unidades alternativas |
 | `maestros.importacion.ejecutar` | Carga desde Excel |
 
 ## 3. Flujo de configuración
@@ -69,18 +68,32 @@ Al crear una empresa se asignan los perfiles sugeridos. Para empresas creadas an
 
 ### Artículos
 
+Los artículos son **compartidos por todas las empresas**. No guardan cuentas: en cada empresa las toman del perfil contable de su categoría.
+
 | Campo | Regla |
 | --- | --- |
-| Código | Obligatorio, único |
+| Código | Si se deja vacío, el ERP usa el **siguiente correlativo de la categoría** (`SUM-OFI-0001`, `SUM-OFI-0002`…). Se puede escribir uno propio (por ejemplo, al migrar de otro sistema): mayúsculas, números, `.`, `-` o `_`, hasta 30. Único; no cambia |
 | Descripción | Obligatoria, hasta 240 caracteres |
-| Tipo | Bien inventariable · Bien no inventariable · Servicio · Activo fijo |
-| Categoría | Obligatoria; debe resolver un perfil del mismo tipo |
-| Unidad de medida | Obligatoria (servicios: `SRV` por defecto) |
-| Impuesto | Por defecto IGV 18 % |
-| Perfil contable (excepción) | Solo con permiso `excepcion_contable` |
+| Tipo | Bien inventariable · Bien no inventariable · Servicio · Activo fijo. **Debe coincidir con el tipo del perfil contable de la categoría** en cada empresa que lo tenga |
+| Categoría | Obligatoria y activa |
+| Unidad de medida | Obligatoria y activa |
+| Impuesto | Código del impuesto (por defecto `IGV18`); cada empresa aplica el suyo |
+| Marca y modelo | Opcionales; aparecerán en la orden de compra |
+| Especificación técnica | Opcional, hasta 4000 caracteres; se enviará al proveedor con la orden de compra |
+| Precio referencial | Opcional, con su moneda; las solicitudes lo usarán para estimar el monto |
 | Activo | Un artículo inactivo no se puede pedir |
 
-En la ficha del artículo se muestra, solo para lectura, la **combinación contable resultante** (cuenta de cargo, impuesto, cuenta por pagar).
+**Configuración contable por empresa.** La ficha muestra, para cada empresa activa, el perfil que usa el artículo, de dónde viene (su categoría o una excepción), la cuenta de cargo, la cuenta por pagar, el impuesto y si **ya se puede comprar**. Si la categoría no tiene perfil en una empresa, el artículo se guarda igual, pero esa empresa no podrá comprarlo hasta que Contabilidad le asigne uno.
+
+**Excepción contable.** Cuando un artículo debe ir a otra cuenta que el resto de su categoría (por ejemplo, un proyector en *Equipos de cómputo* que la empresa registra como mueble), el contador elige otro perfil del mismo tipo para ese artículo y esa empresa (permiso `contabilidad.perfil.editar`).
+
+**Unidades alternativas.** Para pedir en una unidad y recibir en otra: 1 CJA = 12 UND propio de cada artículo. Las conversiones generales (1 DOC = 12 UND, 1 KG = 1000 G) se aplican solas.
+
+**Reglas que protegen la contabilidad:**
+
+- No se guarda un artículo cuyo tipo no coincide con el perfil de su categoría en alguna empresa.
+- Contabilidad no puede cambiar el perfil de una categoría si deja artículos de otro tipo en esa rama; debe moverlos de categoría o definirles una excepción.
+- El código de impuesto debe existir en alguna empresa.
 
 ### Empresas
 

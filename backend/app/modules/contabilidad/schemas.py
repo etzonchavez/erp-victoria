@@ -152,3 +152,23 @@ class CategoriaPerfilCambio(BaseModel):
 class SugeridosResultado(BaseModel):
     perfiles: int
     categorias: int
+
+
+class ImpuestoResumen(Esquema):
+    codigo: str
+    nombre: str
+    tasa: Decimal
+
+
+class EstadoContableEmpresa(BaseModel):
+    empresa_id: uuid.UUID
+    razon_social: str
+    perfil: PerfilSalida | None
+    origen: str | None
+    excepcion: bool
+    impuesto: ImpuestoResumen | None
+    problema: str | None
+
+
+class ArticuloPerfilCambio(BaseModel):
+    perfil_id: uuid.UUID | None  # null = usar el perfil de la categoría

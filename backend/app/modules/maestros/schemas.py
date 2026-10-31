@@ -315,3 +315,70 @@ class ProveedorCambio(BaseModel):
     moneda: str | None = Field(default=None, min_length=3, max_length=3)
     condicion_pago_id: uuid.UUID | None = None
     activo: bool | None = None
+
+
+# Artículos
+class UnidadArticuloSalida(Esquema):
+    unidad: str
+    factor: Decimal
+
+
+class UnidadArticuloEntrada(BaseModel):
+    unidad: str = Field(min_length=1, max_length=10)
+    factor: Decimal = Field(gt=0, max_digits=18, decimal_places=6)
+
+
+class UnidadesArticuloCambio(BaseModel):
+    unidades: list[UnidadArticuloEntrada]
+
+
+class ArticuloResumen(Esquema):
+    id: uuid.UUID
+    codigo: str
+    descripcion: str
+    tipo: str
+    categoria: CategoriaSalida
+    unidad: str
+    precio_referencial: Decimal | None
+    moneda_precio: str | None
+    activo: bool
+
+
+class ArticuloSalida(ArticuloResumen):
+    impuesto: str
+    marca: str | None
+    modelo: str | None
+    especificacion: str | None
+    unidades_alternas: list[UnidadArticuloSalida]
+
+
+class ArticuloCrear(BaseModel):
+    codigo: str | None = Field(default=None, max_length=30)  # vacío = siguiente correlativo
+    descripcion: str = Field(min_length=3, max_length=240)
+    tipo: str
+    categoria_id: uuid.UUID
+    unidad: str = Field(min_length=1, max_length=10)
+    impuesto: str | None = Field(default=None, max_length=20)
+    marca: str | None = Field(default=None, max_length=100)
+    modelo: str | None = Field(default=None, max_length=100)
+    especificacion: str | None = Field(default=None, max_length=4000)
+    precio_referencial: Decimal | None = Field(default=None, ge=0, max_digits=18, decimal_places=4)
+    moneda_precio: str | None = Field(default=None, min_length=3, max_length=3)
+
+
+class ArticuloCambio(BaseModel):
+    descripcion: str | None = Field(default=None, min_length=3, max_length=240)
+    tipo: str | None = None
+    categoria_id: uuid.UUID | None = None
+    unidad: str | None = Field(default=None, min_length=1, max_length=10)
+    impuesto: str | None = Field(default=None, max_length=20)
+    marca: str | None = Field(default=None, max_length=100)
+    modelo: str | None = Field(default=None, max_length=100)
+    especificacion: str | None = Field(default=None, max_length=4000)
+    precio_referencial: Decimal | None = Field(default=None, ge=0, max_digits=18, decimal_places=4)
+    moneda_precio: str | None = Field(default=None, min_length=3, max_length=3)
+    activo: bool | None = None
+
+
+class CodigoSugerido(BaseModel):
+    codigo: str

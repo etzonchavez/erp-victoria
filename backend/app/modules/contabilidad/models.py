@@ -100,3 +100,16 @@ class CategoriaPerfil(ConAuditoria, Base):
     perfil_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cnt_perfil.id"))
 
     perfil: Mapped[Perfil] = relationship(lazy="joined")
+
+
+class ArticuloPerfil(ConAuditoria, Base):
+    """Excepción: perfil propio de un artículo en una empresa, en vez del de su categoría."""
+
+    __tablename__ = "cnt_articulo_perfil"
+    __table_args__ = (UniqueConstraint("empresa_id", "articulo_id"),)
+
+    empresa_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_empresa.id"), index=True)
+    articulo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_articulo.id"), index=True)
+    perfil_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cnt_perfil.id"))
+
+    perfil: Mapped[Perfil] = relationship(lazy="joined")

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import Articulos from "./paginas/Articulos";
 import Auditoria from "./paginas/Auditoria";
 import Categorias from "./paginas/Categorias";
 import CentrosCosto from "./paginas/CentrosCosto";
@@ -33,6 +34,7 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
       { ruta: "empresas", nombre: "Empresas", permiso: "maestros.empresa.ver", pagina: () => <Empresas /> },
       { ruta: "monedas", nombre: "Monedas y tipo de cambio", permiso: "maestros.moneda.ver", pagina: () => <Monedas /> },
       { ruta: "unidades", nombre: "Unidades de medida", permiso: "maestros.unidad.ver", pagina: () => <Unidades /> },
+      { ruta: "articulos", nombre: "Artículos", permiso: "maestros.articulo.ver", pagina: () => <Articulos /> },
       { ruta: "proveedores", nombre: "Proveedores", permiso: "maestros.proveedor.ver", pagina: () => <Proveedores /> },
       { ruta: "categorias", nombre: "Categorías de artículo", permiso: "maestros.categoria.ver", pagina: () => <Categorias /> },
       { ruta: "condiciones-pago", nombre: "Condiciones de pago", permiso: "maestros.proveedor.ver", pagina: () => <CondicionesPago /> },

@@ -15,7 +15,7 @@ Construir ahora una **contabilidad base de configuración**, sin asientos reales
 1. **Plan de cuentas por empresa**, cargado desde una **plantilla versionada por país** (Perú: `PCGE-2019` reducido) y editable. Cuentas jerárquicas; solo las cuentas *imputables* (último nivel) se usan en transacciones.
 2. **Perfiles contables reutilizables**. Cada perfil define las cuentas de un tipo de compra (compra, existencia, variación, gasto, por pagar). Vienen 8 perfiles precargados (6 originales y, desde la versión 0.8.0, activo fijo de muebles y de maquinaria).
 3. **Categorías de artículo jerárquicas** que apuntan a un perfil. Si una subcategoría no define uno, **hereda** el de su categoría padre.
-4. **Artículo** con un tipo: bien inventariable, bien no inventariable, servicio o activo fijo. Sus cuentas salen de la categoría. Solo el permiso `maestros.articulo.excepcion_contable` permite asignarle otro perfil.
+4. **Artículo** con un tipo: bien inventariable, bien no inventariable, servicio o activo fijo. Sus cuentas salen de la categoría. Solo el contador (permiso `contabilidad.perfil.editar`) puede asignarle otro perfil en una empresa (excepción).
 5. **Centros de costo** ligados a una unidad de negocio.
 6. **Impuestos** (IGV 18 %, exonerado, inafecto) con su cuenta contable.
 7. Cada línea de solicitud y orden de compra **guarda la combinación contable** vigente al crearse (cuenta + centro de costo). La orden muestra la **vista previa del asiento** (Debe/Haber) sin contabilizar.

@@ -325,3 +325,12 @@ th.numero, td.numero:not(:first-child) { text-align: right; }
 @media (max-width: 600px) {
   .fila-doble { grid-template-columns: 1fr; }
 }
+
+/* ---------- artículos ---------- */
+textarea { resize: vertical; font: inherit; }
+.entrada-con-moneda { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
+.fila-alterna { display: grid; grid-template-columns: auto 1fr auto 120px auto auto; gap: 8px; align-items: center; }
+.excepcion { margin-top: 8px; }
+.excepcion select { min-width: 240px; }
+.li-estado > div { flex: 1; }
+.sin-corte { white-space: nowrap; }

@@ -85,3 +85,10 @@ TIPOS_CUENTA_BANCARIA = {
     "ahorros": "Cuenta de ahorros",
     "detracciones": "Cuenta de detracciones",
 }
+
+TIPOS_ARTICULO = {
+    "bien_inventariable": "Bien inventariable",
+    "bien_no_inventariable": "Bien no inventariable",
+    "servicio": "Servicio",
+    "activo_fijo": "Activo fijo",
+}

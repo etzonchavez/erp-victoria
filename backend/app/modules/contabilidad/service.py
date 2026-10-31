@@ -10,18 +10,21 @@ from sqlalchemy.orm import Session
 from app.core.errors import ErrorERP, no_encontrado
 from app.core.eventos import suscribir
 from app.localizacion import pais
-from app.modules.contabilidad.models import CategoriaPerfil, CentroCosto, Cuenta, Impuesto, Perfil
+from app.modules.contabilidad.models import (
+    ArticuloPerfil,
+    CategoriaPerfil,
+    CentroCosto,
+    Cuenta,
+    Impuesto,
+    Perfil,
+)
+from app.modules.maestros import datos_base
 from app.modules.maestros import service as maestros
-from app.modules.maestros.models import Categoria, Empresa
+from app.modules.maestros.models import Articulo, Categoria, Empresa
 from app.modules.seguridad.models import Usuario
 from app.modules.seguridad.service import auditar
 
-TIPOS_ARTICULO: dict[str, str] = {
-    "bien_inventariable": "Bien inventariable",
-    "bien_no_inventariable": "Bien no inventariable",
-    "servicio": "Servicio",
-    "activo_fijo": "Activo fijo",
-}
+TIPOS_ARTICULO = datos_base.TIPOS_ARTICULO
 
 NATURALEZAS = [
     "activo",
@@ -770,6 +773,9 @@ def asignar_perfil_categoria(
                 )
             )
         despues = perfil.codigo
+    db.flush()
+    db.expire_all()  # que la verificación lea el perfil nuevo, no el que estaba en memoria
+    _verificar_articulos_de_rama(db, empresa, cat)
     auditar(
         db,
         actor,
@@ -783,3 +789,198 @@ def asignar_perfil_categoria(
         },
     )
     db.commit()
+
+
+# ---------------------------------------------------------------- artículos
+
+
+def _excepciones(db: Session, articulo_id: uuid.UUID) -> dict[uuid.UUID, ArticuloPerfil]:
+    return {
+        e.empresa_id: e
+        for e in db.scalars(select(ArticuloPerfil).where(ArticuloPerfil.articulo_id == articulo_id))
+    }
+
+
+def perfil_de_articulo(
+    db: Session, empresa_id: uuid.UUID, articulo: Articulo
+) -> tuple[Perfil | None, str | None]:
+    """Perfil efectivo del artículo en la empresa y de dónde viene.
+
+    Primero la excepción del artículo; si no hay, el de su categoría (con herencia).
+    Lo usarán las solicitudes y órdenes de compra para guardar la cuenta de cada línea.
+    """
+    excepcion = db.scalar(
+        select(ArticuloPerfil).where(
+            ArticuloPerfil.empresa_id == empresa_id, ArticuloPerfil.articulo_id == articulo.id
+        )
+    )
+    if excepcion:
+        return excepcion.perfil, "Excepción del artículo"
+    perfil, origen = perfil_de_categoria(db, empresa_id, articulo.categoria_id)
+    return perfil, (f"Categoría {origen.codigo}" if origen else None)
+
+
+def _empresas_activas(db: Session) -> list[Empresa]:
+    return maestros.listar_empresas(db, solo_activas=True)
+
+
+def _desajustes(db: Session, articulo: Articulo) -> list[str]:
+    """Empresas donde el perfil efectivo es de otro tipo que el artículo."""
+    problemas = []
+    for empresa in _empresas_activas(db):
+        perfil, origen = perfil_de_articulo(db, empresa.id, articulo)
+        if perfil and perfil.tipo_articulo != articulo.tipo:
+            problemas.append(
+                f"{empresa.razon_social}: {origen} usa el perfil {perfil.nombre} "
+                f"({TIPOS_ARTICULO[perfil.tipo_articulo].lower()})"
+            )
+    return problemas
+
+
+@suscribir("validar_articulo")
+def _validar_articulo(db: Session, articulo: Articulo) -> None:
+    """Al guardar un artículo: el tipo debe coincidir con el perfil de cada empresa que lo tenga."""
+    problemas = _desajustes(db, articulo)
+    if problemas:
+        raise ErrorERP(
+            422,
+            "tipo_no_coincide",
+            f"El artículo es {TIPOS_ARTICULO[articulo.tipo].lower()}, pero en "
+            + "; ".join(problemas)
+            + ". Elige otra categoría o pide al contador un perfil del mismo tipo.",
+        )
+    empresas = _empresas_activas(db)
+    if empresas and not db.scalar(
+        select(Impuesto.id).where(Impuesto.codigo == articulo.impuesto).limit(1)
+    ):
+        raise ErrorERP(
+            422, "impuesto_inexistente", f"Ninguna empresa tiene el impuesto {articulo.impuesto}"
+        )
+
+
+def _verificar_articulos_de_rama(db: Session, empresa: Empresa, categoria: Categoria) -> None:
+    """Al cambiar el perfil de una categoría, sus artículos deben seguir siendo del mismo tipo."""
+    rama = [c.id for c in maestros.subcategorias(db, categoria.id)]
+    distintos = []
+    for art in maestros.articulos_de_categorias(db, rama):
+        perfil, _ = perfil_de_articulo(db, empresa.id, art)
+        if perfil and perfil.tipo_articulo != art.tipo:
+            distintos.append(art.codigo)
+    if distintos:
+        db.rollback()
+        muestra = ", ".join(distintos[:5]) + ("…" if len(distintos) > 5 else "")
+        raise ErrorERP(
+            409,
+            "articulos_de_otro_tipo",
+            f"{len(distintos)} artículo(s) de esta rama son de otro tipo que el perfil "
+            f"({muestra}). "
+            "Cámbialos de categoría o define una excepción para ellos.",
+        )
+
+
+def estado_contable(db: Session, articulo: Articulo) -> list[dict]:
+    """Para cada empresa activa: perfil efectivo, origen, impuesto y si se puede comprar."""
+    excepciones = _excepciones(db, articulo.id)
+    filas = []
+    for empresa in _empresas_activas(db):
+        perfil, origen = perfil_de_articulo(db, empresa.id, articulo)
+        impuesto = db.scalar(
+            select(Impuesto).where(
+                Impuesto.empresa_id == empresa.id, Impuesto.codigo == articulo.impuesto
+            )
+        )
+        problema = None
+        if not perfil:
+            problema = "Sin perfil contable: la categoría no tiene perfil en esta empresa"
+        elif not perfil.activo:
+            problema = f"El perfil {perfil.nombre} está inactivo"
+        elif perfil.tipo_articulo != articulo.tipo:
+            problema = "El perfil es de otro tipo de artículo"
+        elif not impuesto or not impuesto.activo:
+            problema = f"La empresa no tiene activo el impuesto {articulo.impuesto}"
+        filas.append(
+            {
+                "empresa_id": empresa.id,
+                "razon_social": empresa.razon_social,
+                "perfil": perfil,
+                "origen": origen,
+                "excepcion": empresa.id in excepciones,
+                "impuesto": impuesto,
+                "problema": problema,
+            }
+        )
+    return filas
+
+
+def asignar_perfil_articulo(
+    db: Session,
+    actor: Usuario,
+    empresa_id: uuid.UUID,
+    articulo_id: uuid.UUID,
+    perfil_id: uuid.UUID | None,
+) -> None:
+    """Define (o quita, con None) la excepción contable del artículo en la empresa."""
+    empresa = maestros.obtener_empresa(db, empresa_id)
+    art = maestros.obtener_articulo(db, articulo_id)
+    actual = _excepciones(db, art.id).get(empresa.id)
+    antes = actual.perfil.codigo if actual else None
+    if perfil_id is None:
+        if not actual:
+            return
+        db.delete(actual)
+        db.flush()
+        problemas = _desajustes(db, art)
+        if problemas:
+            db.rollback()
+            raise ErrorERP(
+                409,
+                "tipo_no_coincide",
+                "Sin la excepción, el artículo tomaría un perfil de otro tipo: "
+                + "; ".join(problemas),
+            )
+        despues = "categoría"
+    else:
+        perfil = obtener_perfil(db, perfil_id)
+        if perfil.empresa_id != empresa.id:
+            raise ErrorERP(422, "perfil_otra_empresa", "El perfil contable es de otra empresa")
+        if not perfil.activo:
+            raise ErrorERP(422, "perfil_inactivo", f"El perfil {perfil.codigo} está inactivo")
+        if perfil.tipo_articulo != art.tipo:
+            raise ErrorERP(
+                422,
+                "tipo_no_coincide",
+                f"El perfil {perfil.nombre} es para {TIPOS_ARTICULO[perfil.tipo_articulo].lower()}"
+                f" y el artículo es {TIPOS_ARTICULO[art.tipo].lower()}",
+            )
+        if actual and actual.perfil_id == perfil.id:
+            return
+        if actual:
+            actual.perfil_id, actual.actualizado_por = perfil.id, actor.id
+        else:
+            db.add(
+                ArticuloPerfil(
+                    empresa_id=empresa.id,
+                    articulo_id=art.id,
+                    perfil_id=perfil.id,
+                    creado_por=actor.id,
+                    actualizado_por=actor.id,
+                )
+            )
+        despues = perfil.codigo
+    auditar(
+        db,
+        actor,
+        "excepcion_contable",
+        "articulo",
+        art.id,
+        {
+            "empresa": empresa.razon_social,
+            "articulo": art.codigo,
+            "perfil": {"antes": antes or "categoría", "despues": despues},
+        },
+    )
+    db.commit()
+
+
+def codigos_impuesto(db: Session) -> list[str]:
+    return sorted(set(db.scalars(select(Impuesto.codigo).where(Impuesto.activo.is_(True)))))

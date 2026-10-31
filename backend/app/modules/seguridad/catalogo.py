@@ -71,6 +71,9 @@ PERMISOS: list[PermisoDef] = [
         "Ver completas, registrar y cambiar las cuentas bancarias de los proveedores",
     ),
     PermisoDef("maestros.condicion_pago.editar", "Crear y editar condiciones de pago"),
+    PermisoDef("maestros.articulo.ver", "Ver artículos y su configuración contable por empresa"),
+    PermisoDef("maestros.articulo.crear", "Registrar artículos"),
+    PermisoDef("maestros.articulo.editar", "Editar artículos y sus unidades alternativas"),
     # Contabilidad base (ADR-004)
     PermisoDef("contabilidad.cuenta.ver", "Ver el plan de cuentas"),
     PermisoDef(
@@ -79,7 +82,7 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("contabilidad.perfil.ver", "Ver perfiles contables"),
     PermisoDef(
         "contabilidad.perfil.editar",
-        "Crear y editar perfiles contables y asignarlos a las categorías de artículo",
+        "Perfiles contables: crearlos, asignarlos a categorías y definir excepciones por artículo",
     ),
     PermisoDef("contabilidad.centro_costo.ver", "Ver centros de costo"),
     PermisoDef("contabilidad.centro_costo.editar", "Crear y editar centros de costo"),
@@ -204,6 +207,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.categoria.editar",
             "maestros.proveedor.ver",
             "maestros.condicion_pago.editar",
+            "maestros.articulo.ver",
         ],
     ),
     RolDef(
@@ -211,7 +215,7 @@ ROLES_ESTANDAR: list[RolDef] = [
         "maestros",
         "Analista de maestros",
         "operativo",
-        "Registra proveedores y el tipo de cambio diario; consulta los demás maestros.",
+        "Registra artículos, proveedores y el tipo de cambio diario; consulta los demás maestros.",
         [
             "maestros.empresa.ver",
             "maestros.moneda.ver",
@@ -221,6 +225,9 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.proveedor.ver",
             "maestros.proveedor.crear",
             "maestros.proveedor.editar",
+            "maestros.articulo.ver",
+            "maestros.articulo.crear",
+            "maestros.articulo.editar",
         ],
     ),
     RolDef(
@@ -235,6 +242,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "maestros.unidad.ver",
             "maestros.categoria.ver",
             "maestros.proveedor.ver",
+            "maestros.articulo.ver",
         ],
     ),
     RolDef(
