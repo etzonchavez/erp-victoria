@@ -56,6 +56,7 @@ estado = aprobaciones.actuar(db, actor, ctx, ronda, "aprobar", comentario)
 
 ## Consecuencias
 
-- Órdenes de compra y documentos futuros se aprueban sin construir otro flujo.
+- Las órdenes de compra ya lo usan (documento `orden_compra`, 0.15.0) con reglas propias; los documentos futuros se aprueban sin construir otro flujo.
+- Las reglas se administran en `/api/v1/aprobaciones` con el permiso del documento (`solicitudes.regla.*`, `compras.regla.*`).
 - No hay delegación ni reemplazo por vacaciones todavía: se agregará como "aprobador suplente" con vigencia.
 - No hay escalamiento por tiempo (SLA): queda para cuando existan notificaciones por correo.

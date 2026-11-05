@@ -6,73 +6,9 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.modules.aprobaciones.schemas import OpcionesEmpresa, Ruta  # noqa: F401  (reexporta)
+
 Atributos = dict[str, str | float | int | None]
-
-
-# ---------------------------------------------------------------- reglas de aprobación
-
-
-class AprobadorDatos(BaseModel):
-    tipo: str
-    usuario_id: uuid.UUID | None = None
-    rol_id: uuid.UUID | None = None
-    unidad_negocio_id: uuid.UUID | None = None
-    categoria_id: uuid.UUID | None = None
-    centro_costo_id: uuid.UUID | None = None
-
-
-class AprobadorSalida(AprobadorDatos):
-    descripcion: str
-
-
-class NivelDatos(BaseModel):
-    monto_desde: Decimal = Decimal(0)
-    modo: str = "serie"
-    aprobadores: list[AprobadorDatos] = []
-
-
-class NivelSalida(BaseModel):
-    numero: int
-    monto_desde: Decimal
-    modo: str
-    aprobadores: list[AprobadorSalida]
-
-
-class ReglaDatos(BaseModel):
-    nombre: str = Field(max_length=100)
-    prioridad: int
-    activo: bool = True
-    unidad_negocio_id: uuid.UUID | None = None
-    categoria_id: uuid.UUID | None = None
-    tipo_articulo: str | None = None
-    centro_costo_id: uuid.UUID | None = None
-    niveles: list[NivelDatos]
-
-
-class ReglaSalida(BaseModel):
-    id: uuid.UUID
-    empresa_id: uuid.UUID
-    nombre: str
-    prioridad: int
-    activo: bool
-    unidad_negocio_id: uuid.UUID | None
-    categoria_id: uuid.UUID | None
-    tipo_articulo: str | None
-    centro_costo_id: uuid.UUID | None
-    condiciones: str  # resumen legible
-    niveles: list[NivelSalida]
-
-
-class OpcionCodigo(BaseModel):
-    codigo: str
-    nombre: str
-
-
-class CatalogoAprobacion(BaseModel):
-    modos: list[OpcionCodigo]
-    tipos_aprobador: list[OpcionCodigo]
-    estados: list[OpcionCodigo]
-    max_niveles: int
 
 
 # ---------------------------------------------------------------- solicitudes
@@ -174,6 +110,7 @@ class SolicitudResumen(BaseModel):
     total: Decimal
     total_funcional: Decimal
     estado: str
+    orden_compra_numero: str | None = None
     pendiente_de: list[str]  # quién tiene la aprobación en sus manos ahora
 
 
@@ -187,38 +124,7 @@ class SolicitudSalida(SolicitudResumen):
     acciones: Acciones
 
 
-class PasoSimulado(BaseModel):
-    descripcion: str
-    estado: str
-    motivo: str | None
-
-
-class NivelSimulado(BaseModel):
-    numero: int
-    modo: str
-    monto_desde: Decimal
-    pasos: list[PasoSimulado]
-
-
-class Ruta(BaseModel):
-    regla: str
-    niveles: list[NivelSimulado]
-
-
 # ---------------------------------------------------------------- listas de apoyo
-
-
-class OpcionId(BaseModel):
-    id: uuid.UUID
-    codigo: str
-    nombre: str
-
-
-class OpcionesEmpresa(BaseModel):
-    unidades: list[OpcionId]
-    centros: list[OpcionId]
-    categorias: list[OpcionId]
-    tipos_articulo: list[OpcionCodigo]
 
 
 class UnidadAlterna(BaseModel):

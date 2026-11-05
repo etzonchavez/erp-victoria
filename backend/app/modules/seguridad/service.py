@@ -168,6 +168,15 @@ def permisos_de(db: Session, usuario: Usuario) -> set[str]:
     }
 
 
+def verificar_permiso(db: Session, usuario: Usuario, permiso: str) -> None:
+    """Igual que la dependencia requiere(), para usar dentro de una ruta o servicio."""
+    modulo = permiso.split(".")[0]
+    if modulo not in modulos_activos(db):
+        raise ErrorERP(403, "modulo_inactivo", f"El módulo {modulo} no está activo")
+    if permiso not in permisos_de(db, usuario):
+        raise ErrorERP(403, "sin_permiso", f"No tienes el permiso {permiso}")
+
+
 # ---------------------------------------------------------------- módulos
 
 

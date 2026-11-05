@@ -25,7 +25,6 @@ const NOMBRE_ESTADO: Record<string, string> = {
   devuelta: "Devuelta",
   rechazada: "Rechazada",
   aprobada: "Aprobada",
-  parcialmente_atendida: "Parcialmente atendida",
   atendida: "Atendida",
   anulada: "Anulada",
 };
@@ -47,6 +46,8 @@ const MODO: Record<string, string> = {
 export function EstadoSolicitud({ estado }: { estado: string }) {
   return <span className={`etiqueta etiqueta-sol sol-${estado}`}>{NOMBRE_ESTADO[estado] ?? estado}</span>;
 }
+
+export { BuscadorArticulo, HistorialRonda, NOMBRE_ESTADO, NOMBRE_PASO };
 
 export default function Solicitudes() {
   const { puede } = useSesion();
@@ -530,7 +531,15 @@ function FormSolicitud({
   );
 }
 
-function BuscadorArticulo({ articulo, onElegir }: { articulo: ArticuloLinea | null; onElegir: (a: ArticuloOpcion) => void }) {
+function BuscadorArticulo({
+  articulo,
+  onElegir,
+  ruta = "/solicitudes/articulos",
+}: {
+  articulo: ArticuloLinea | null;
+  onElegir: (a: ArticuloOpcion) => void;
+  ruta?: string;
+}) {
   const [buscando, setBuscando] = useState(!articulo);
   const [q, setQ] = useState("");
   const [resultados, setResultados] = useState<ArticuloOpcion[]>([]);
@@ -540,12 +549,12 @@ function BuscadorArticulo({ articulo, onElegir }: { articulo: ArticuloLinea | nu
     if (!buscando) return;
     window.clearTimeout(temporizador.current);
     temporizador.current = window.setTimeout(() => {
-      api<ArticuloOpcion[]>(`/solicitudes/articulos?texto=${encodeURIComponent(q)}`)
+      api<ArticuloOpcion[]>(`${ruta}?texto=${encodeURIComponent(q)}`)
         .then(setResultados)
         .catch(() => setResultados([]));
     }, 250);
     return () => window.clearTimeout(temporizador.current);
-  }, [q, buscando]);
+  }, [q, buscando, ruta]);
 
   if (!buscando && articulo)
     return (
@@ -609,7 +618,7 @@ function DetalleSolicitud({ id, onEditar, onCambio }: { id: string; onEditar: (s
   }, [id]);
   useEffect(() => {
     cargar();
-    api<CatalogoAprobacion>("/solicitudes/catalogo").then(setCatalogo).catch(() => null);
+    api<CatalogoAprobacion>("/aprobaciones/catalogo").then(setCatalogo).catch(() => null);
   }, [cargar]);
 
   // Antes de enviar, se muestra quién aprobaría
@@ -660,6 +669,7 @@ function DetalleSolicitud({ id, onEditar, onCambio }: { id: string; onEditar: (s
         </div>
         <EstadoSolicitud estado={sol.estado} />
       </div>
+      {sol.orden_compra_numero && <p className="aviso aviso-info">Atendida en la orden de compra {sol.orden_compra_numero}.</p>}
       {sol.justificacion && <p>{sol.justificacion}</p>}
 
       <div className="tabla-contenedor">

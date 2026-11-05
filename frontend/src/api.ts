@@ -260,9 +260,9 @@ export type Opcion = { id: string; nombre: string; detalle: string | null };
 export type OpcionCodigo = { codigo: string; nombre: string };
 export type OpcionId = { id: string; codigo: string; nombre: string };
 export type CatalogoAprobacion = {
+  documentos: OpcionCodigo[];
   modos: OpcionCodigo[];
   tipos_aprobador: OpcionCodigo[];
-  estados: OpcionCodigo[];
   max_niveles: number;
 };
 export type Condiciones = {
@@ -318,6 +318,7 @@ export type SolicitudResumen = {
   total: string;
   total_funcional: string;
   estado: string;
+  orden_compra_numero: string | null;
   pendiente_de: string[];
 };
 export type DistribucionSolicitud = {
@@ -462,3 +463,120 @@ export async function descargar(ruta: string, nombre: string): Promise<void> {
   enlace.click();
   URL.revokeObjectURL(url);
 }
+
+/** Pide un archivo (PDF) a la API con la sesión del usuario y devuelve un enlace temporal. */
+export async function archivoUrl(ruta: string, opciones: { metodo?: string; cuerpo?: unknown } = {}): Promise<string> {
+  const token = leerToken();
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  if (opciones.cuerpo !== undefined) headers["Content-Type"] = "application/json";
+  const r = await fetch(`${API_URL}/api/v1${ruta}`, {
+    method: opciones.metodo ?? "GET",
+    headers,
+    body: opciones.cuerpo !== undefined ? JSON.stringify(opciones.cuerpo) : undefined,
+  });
+  if (!r.ok) {
+    const datos = await r.json().catch(() => null);
+    throw new ErrorApi(r.status, datos?.codigo ?? "error", datos?.mensaje ?? `Error ${r.status}`);
+  }
+  return URL.createObjectURL(await r.blob());
+}
+
+// Órdenes de compra
+export type ProveedorOpcion = {
+  id: string;
+  razon_social: string;
+  documento: string;
+  moneda: string;
+  condicion_pago_id: string;
+  contactos: OpcionId[];
+};
+export type OpcionesCompra = {
+  unidades: OpcionId[];
+  centros: OpcionId[];
+  proveedores: ProveedorOpcion[];
+  condiciones: OpcionId[];
+  impuestos: { id: string; codigo: string; nombre: string; tasa: string }[];
+  impuesto_defecto: string | null;
+  monedas: string[];
+  estados: OpcionCodigo[];
+};
+export type SolicitudDisponible = {
+  id: string;
+  numero: string;
+  titulo: string;
+  solicitante: string;
+  unidad_negocio: string;
+  fecha_requerida: string | null;
+  moneda: string;
+  total: string;
+  lineas: { id: string; numero: number; articulo: string; descripcion: string; cantidad: string; unidad: string; precio: string; subtotal: string; centros: string }[];
+};
+export type OrdenResumen = {
+  id: string;
+  numero: string;
+  fecha: string;
+  empresa_id: string;
+  unidad_negocio_id: string;
+  unidad_negocio: string;
+  comprador_id: string;
+  comprador: string;
+  proveedor_id: string;
+  proveedor: string;
+  moneda: string;
+  total: string;
+  total_funcional: string;
+  estado: string;
+  solicitudes: string[];
+  pendiente_de: string[];
+};
+export type LineaOrden = {
+  numero: number;
+  solicitud_id: string | null;
+  solicitud_linea_id: string | null;
+  solicitud_numero: string | null;
+  articulo_id: string;
+  articulo: string;
+  descripcion: string;
+  cantidad: string;
+  unidad: string;
+  unidad_base: string;
+  unidades: string[];
+  precio: string;
+  subtotal: string;
+  impuesto_id: string | null;
+  tasa: string;
+  impuesto_monto: string;
+  total: string;
+  cuenta: string | null;
+  distribuciones: DistribucionSolicitud[];
+  atributos: Record<string, string | null>;
+};
+export type Orden = OrdenResumen & {
+  contacto_id: string | null;
+  condicion_pago_id: string;
+  condicion_pago: string;
+  fecha_entrega: string | null;
+  lugar_entrega: string | null;
+  observaciones: string | null;
+  subtotal: string;
+  impuesto: string;
+  tipo_cambio: string;
+  ronda: number;
+  enviada_en: string | null;
+  lineas: LineaOrden[];
+  atributos: Record<string, string | null>;
+  pasos: PasoAprobacion[];
+  acciones: { editar: boolean; enviar: boolean; aprobar: boolean; anular: boolean; marcar_enviada: boolean };
+};
+export type ConfigFormato = {
+  titulo: string;
+  color: string;
+  tamano: string;
+  columnas_datos: number;
+  mostrar_logo: boolean;
+  secciones: { codigo: string; activo: boolean }[];
+  columnas: string[];
+  terminos: string;
+  pie: string;
+};
+export type FormatoOC = { configuracion: ConfigFormato; tiene_logo: boolean; secciones: OpcionCodigo[]; columnas: OpcionCodigo[] };

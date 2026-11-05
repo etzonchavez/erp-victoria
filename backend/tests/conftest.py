@@ -23,6 +23,7 @@ def db():
     engine = create_engine(
         "sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
+
     # pysqlite no emite BEGIN y rompe los savepoints (la carga desde Excel los usa).
     # Receta oficial de SQLAlchemy; PostgreSQL no lo necesita.
     @event.listens_for(engine, "connect")

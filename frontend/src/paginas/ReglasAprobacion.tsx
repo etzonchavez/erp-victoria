@@ -43,7 +43,8 @@ const MODO_CORTO: Record<string, string> = {
 export default function ReglasAprobacion() {
   const { puede } = useSesion();
   const { avisar } = useAvisos();
-  const editar = puede("solicitudes.regla.editar");
+  const [documento, setDocumento] = useState("");
+  const editar = puede(documento === "orden_compra" ? "compras.regla.editar" : "solicitudes.regla.editar");
   const { empresas, empresa, elegir, cargando } = useEmpresaActiva();
   const [reglas, setReglas] = useState<ReglaAprobacion[]>([]);
   const [catalogo, setCatalogo] = useState<CatalogoAprobacion | null>(null);
@@ -57,25 +58,30 @@ export default function ReglasAprobacion() {
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
-    api<CatalogoAprobacion>("/solicitudes/catalogo").then(setCatalogo).catch(setError);
+    api<CatalogoAprobacion>("/aprobaciones/catalogo")
+      .then((c) => {
+        setCatalogo(c);
+        setDocumento((d) => d || c.documentos[0]?.codigo || "");
+      })
+      .catch(setError);
     api<Opcion[]>("/seguridad/opciones/usuarios").then(setUsuarios).catch(() => setUsuarios([]));
     api<Opcion[]>("/seguridad/opciones/roles").then(setRoles).catch(() => setRoles([]));
   }, []);
 
   const cargar = useCallback(async () => {
-    if (!empresa) return;
+    if (!empresa || !documento) return;
     setError(null);
     try {
       const [r, o] = await Promise.all([
-        api<ReglaAprobacion[]>(`/solicitudes/empresas/${empresa.id}/reglas`),
-        api<OpcionesEmpresa>(`/solicitudes/empresas/${empresa.id}/opciones`),
+        api<ReglaAprobacion[]>(`/aprobaciones/empresas/${empresa.id}/reglas?documento=${documento}`),
+        api<OpcionesEmpresa>(`/aprobaciones/empresas/${empresa.id}/opciones`),
       ]);
       setReglas(r);
       setOpciones(o);
     } catch (e) {
       setError(e);
     }
-  }, [empresa]);
+  }, [empresa, documento]);
   useEffect(() => {
     cargar();
   }, [cargar]);
@@ -135,10 +141,10 @@ export default function ReglasAprobacion() {
     };
     try {
       if (editando === "nueva") {
-        await api(`/solicitudes/empresas/${empresa.id}/reglas`, { metodo: "POST", cuerpo });
+        await api(`/aprobaciones/empresas/${empresa.id}/reglas?documento=${documento}`, { metodo: "POST", cuerpo });
         avisar(`Regla «${form.nombre}» creada.`);
       } else if (editando) {
-        await api(`/solicitudes/reglas/${editando.id}`, { metodo: "PUT", cuerpo });
+        await api(`/aprobaciones/reglas/${editando.id}`, { metodo: "PUT", cuerpo });
         avisar(`Regla «${form.nombre}» guardada.`);
       }
       setEditando(null);
@@ -165,7 +171,7 @@ export default function ReglasAprobacion() {
     <>
       <Encabezado
         titulo="Reglas de aprobación"
-        descripcion="Quién aprueba las solicitudes de compra. Se usa la primera regla, por prioridad, cuyas condiciones cumple la solicitud; cada nivel se activa desde un monto."
+        descripcion="Quién aprueba las solicitudes y las órdenes de compra. Se usa la primera regla, por prioridad, cuyas condiciones cumple el documento; cada nivel se activa desde un monto."
         accion={
           editar && (
             <button className="boton boton-primario" onClick={() => abrir("nueva")} disabled={!empresa}>
@@ -175,6 +181,15 @@ export default function ReglasAprobacion() {
         }
       />
       <div className="barra-filtros">
+        {catalogo && catalogo.documentos.length > 1 && (
+          <div className="pestanas" role="tablist">
+            {catalogo.documentos.map((d) => (
+              <button key={d.codigo} role="tab" aria-selected={documento === d.codigo} onClick={() => setDocumento(d.codigo)}>
+                {d.nombre}
+              </button>
+            ))}
+          </div>
+        )}
         <SelectorEmpresa empresas={empresas} empresa={empresa} elegir={elegir} />
       </div>
       <MensajeError error={error} />
@@ -182,7 +197,7 @@ export default function ReglasAprobacion() {
         <SinEmpresa cargando={cargando} />
       ) : reglas.length === 0 ? (
         <div className="vacio">
-          <p>Aún no hay reglas. Sin una regla, las solicitudes de esta empresa no se pueden enviar a aprobación.</p>
+          <p>Aún no hay reglas. Sin una regla, {documento === "orden_compra" ? "las órdenes" : "las solicitudes"} de esta empresa no se pueden enviar a aprobación.</p>
         </div>
       ) : (
         <div className="tabla-contenedor">
@@ -261,7 +276,7 @@ export default function ReglasAprobacion() {
                 </label>
                 <Selector etiqueta="Centro de costo" valor={form.centro_costo_id} opciones={opciones.centros} deshabilitado={!editar} onCambio={(v) => setForm({ ...form, centro_costo_id: v })} />
               </div>
-              <small>Una solicitud cumple una condición si al menos una de sus líneas la cumple.</small>
+              <small>Un documento cumple una condición si al menos una de sus líneas la cumple.</small>
             </fieldset>
 
             {form.niveles.map((n, i) => (

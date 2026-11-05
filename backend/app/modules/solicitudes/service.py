@@ -7,6 +7,7 @@ Ciclo de vida (ver models.ESTADOS):
        │                    │  └─rechazar──▶ rechazada (final)
        └──── reenviar ── devuelta ◀─devolver
     borrador / devuelta / aprobada ──anular──▶ anulada
+    aprobada ──Compras la incluye en una OC──▶ atendida ──OC rechazada o anulada──▶ aprobada
 
 Si la regla no tiene niveles para el monto, la solicitud se aprueba al enviarla.
 """
@@ -472,3 +473,56 @@ def anular(
 
 def historial(db: Session, sol: Solicitud) -> list:
     return aprobaciones.pasos_de(db, DOCUMENTO, sol.id)
+
+
+# ---------------------------------------------------------------- uso desde Compras
+
+
+def disponibles(db: Session, usuario: Usuario, empresa_id: uuid.UUID) -> list[Solicitud]:
+    """Solicitudes aprobadas que aún no están en una orden de compra."""
+    maestros.verificar_acceso_empresa(db, usuario, empresa_id)
+    q = select(Solicitud).where(Solicitud.empresa_id == empresa_id, Solicitud.estado == "aprobada")
+    return [
+        s
+        for s in db.scalars(q.order_by(Solicitud.creado_en))
+        if _tiene_acceso_unidad(db, usuario, s.unidad_negocio_id)
+    ]
+
+
+def tomar_para_orden(
+    db: Session, actor: Usuario, solicitud_id: uuid.UUID, orden_id: uuid.UUID, numero: str
+) -> Solicitud:
+    """La orden de compra toma la solicitud completa: deja de estar disponible."""
+    sol = db.get(Solicitud, solicitud_id, with_for_update=True)
+    if not sol:
+        raise no_encontrado("La solicitud")
+    if sol.orden_compra_id == orden_id:
+        return sol
+    if sol.estado != "aprobada":
+        detalle = f" en la orden {sol.orden_compra_numero}" if sol.orden_compra_numero else ""
+        raise ErrorERP(
+            409,
+            "solicitud_no_disponible",
+            f"La solicitud {sol.numero} no está disponible: está "
+            f"{ESTADOS[sol.estado].lower()}{detalle}",
+        )
+    sol.estado, sol.orden_compra_id, sol.orden_compra_numero = "atendida", orden_id, numero
+    auditar(db, actor, "atender", "solicitud", sol.id, {"numero": sol.numero, "orden": numero})
+    return sol
+
+
+def liberar_de_orden(db: Session, actor: Usuario, solicitud_id: uuid.UUID, motivo: str) -> None:
+    """La orden se rechazó, se anuló o la quitó: la solicitud vuelve a estar aprobada."""
+    sol = obtener(db, solicitud_id)
+    if sol.estado != "atendida":
+        return
+    numero = sol.orden_compra_numero
+    sol.estado, sol.orden_compra_id, sol.orden_compra_numero = "aprobada", None, None
+    auditar(
+        db,
+        actor,
+        "liberar",
+        "solicitud",
+        sol.id,
+        {"numero": sol.numero, "orden": numero, "motivo": motivo},
+    )

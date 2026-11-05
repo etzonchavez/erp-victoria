@@ -37,12 +37,14 @@ nav:
       - ADR-004 Base contable configurable: adr/0004-base-contable.md
       - ADR-005 Atributos adicionales: adr/0005-atributos-adicionales.md
       - ADR-006 Motor de aprobación: adr/0006-motor-de-aprobacion.md
+      - ADR-007 PDF de la orden de compra: adr/0007-pdf-orden-de-compra.md
   - Módulos:
       - Índice: modulos/index.md
       - Seguridad: modulos/seguridad.md
       - Maestros: modulos/maestros.md
       - Contabilidad base: modulos/contabilidad.md
       - Solicitudes de compra: modulos/solicitudes.md
+      - Órdenes de compra: modulos/compras.md
   - Países:
       - Índice: paises/index.md
       - Perú: paises/peru.md

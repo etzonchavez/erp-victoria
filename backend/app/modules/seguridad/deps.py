@@ -31,15 +31,23 @@ def usuario_actual(token: str | None = Depends(oauth2), db: Session = Depends(ge
 
 
 def requiere(permiso: str) -> Callable[..., Usuario]:
-    modulo = permiso.split(".")[0]
+    def _verificar(
+        usuario: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)
+    ) -> Usuario:
+        service.verificar_permiso(db, usuario, permiso)
+        return usuario
+
+    return _verificar
+
+
+def modulo_activo(modulo: str) -> Callable[..., Usuario]:
+    """Para rutas sin permiso propio (aprobar, bandeja): basta con el módulo activo."""
 
     def _verificar(
         usuario: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)
     ) -> Usuario:
         if modulo not in service.modulos_activos(db):
             raise ErrorERP(403, "modulo_inactivo", f"El módulo {modulo} no está activo")
-        if permiso not in service.permisos_de(db, usuario):
-            raise ErrorERP(403, "sin_permiso", f"No tienes el permiso {permiso}")
         return usuario
 
     return _verificar

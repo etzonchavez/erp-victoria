@@ -35,6 +35,11 @@ TIPOS_APROBADOR = {
     "jefe": "Jefe del solicitante",
 }
 MAX_NIVELES = 3
+# Documentos que se aprueban: nombre y prefijo de los permisos de sus reglas
+DOCUMENTOS = {
+    "solicitud": ("Solicitudes de compra", "solicitudes.regla"),
+    "orden_compra": ("Órdenes de compra", "compras.regla"),
+}
 
 
 class Regla(ConAuditoria, Base):

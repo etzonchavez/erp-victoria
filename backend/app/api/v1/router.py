@@ -4,6 +4,8 @@ from fastapi import APIRouter
 
 from app.core.config import get_settings
 from app.core.database import database_is_up
+from app.modules.aprobaciones.api import router as aprobaciones_router
+from app.modules.compras.api import router as compras_router
 from app.modules.contabilidad.api import router as contabilidad_router
 from app.modules.importacion.api import router as importacion_router
 from app.modules.maestros.api import router as maestros_router
@@ -30,3 +32,5 @@ api_router.include_router(maestros_router, prefix="/maestros", tags=["maestros"]
 api_router.include_router(contabilidad_router, prefix="/contabilidad", tags=["contabilidad"])
 api_router.include_router(importacion_router, prefix="/importacion", tags=["importacion"])
 api_router.include_router(solicitudes_router, prefix="/solicitudes", tags=["solicitudes"])
+api_router.include_router(aprobaciones_router, prefix="/aprobaciones", tags=["aprobaciones"])
+api_router.include_router(compras_router, prefix="/compras", tags=["compras"])

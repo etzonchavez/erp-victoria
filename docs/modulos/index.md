@@ -17,4 +17,4 @@ Cada módulo se documenta con esta plantilla:
 | Maestros | [Disponible](maestros.md) · incluye carga desde Excel |
 | Contabilidad base | [Disponible](contabilidad.md) |
 | Solicitudes de compra | [Disponible](solicitudes.md) · aprobación configurable ([ADR-006](../adr/0006-motor-de-aprobacion.md)) |
-| Compras | Semana 5 |
+| Compras (órdenes de compra) | [Disponible](compras.md) · aprobación configurable y PDF ([ADR-007](../adr/0007-pdf-orden-de-compra.md)) |

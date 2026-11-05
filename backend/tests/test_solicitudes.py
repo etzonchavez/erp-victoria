@@ -9,6 +9,7 @@ from tests.test_maestros import crear_empresa
 MAE = "/api/v1/maestros"
 CNT = "/api/v1/contabilidad"
 SOL = "/api/v1/solicitudes"
+APR = "/api/v1/aprobaciones"
 
 
 @pytest.fixture
@@ -76,9 +77,11 @@ def usuario(client, h, emp, nombre: str, roles=(), jefe: dict | None = None) -> 
     return {"id": uid, "h": login(client, email, "Clave1234")}
 
 
-def regla(client, h, emp, niveles, prioridad=1, **extra):
+def regla(client, h, emp, niveles, prioridad=1, documento="solicitud", **extra):
     datos = {"nombre": f"Regla {prioridad}", "prioridad": prioridad, "niveles": niveles, **extra}
-    return client.post(f"{SOL}/empresas/{emp['id']}/reglas", headers=h, json=datos)
+    return client.post(
+        f"{APR}/empresas/{emp['id']}/reglas", headers=h, json=datos, params={"documento": documento}
+    )
 
 
 def nivel(*aprobadores, desde=0, modo="serie"):
@@ -191,9 +194,9 @@ def test_regla_se_lee_y_se_reemplaza(client, h, emp, gente):
         "prioridad": 1,
         "niveles": [nivel(u(gente["ana"])), nivel(u(gente["beto"]), desde=5000)],
     }
-    r = client.put(f"{SOL}/reglas/{regla_id}", headers=h, json=datos)
+    r = client.put(f"{APR}/reglas/{regla_id}", headers=h, json=datos)
     assert r.status_code == 200, r.text
-    assert len(r.json()["niveles"]) == 2 and r.json()["condiciones"] == "Todas las solicitudes"
+    assert len(r.json()["niveles"]) == 2 and r.json()["condiciones"] == "Todos los documentos"
 
 
 # ---------------------------------------------------------------- flujo

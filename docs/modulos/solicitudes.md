@@ -1,6 +1,6 @@
 # Solicitudes de compra
 
-**Versión:** 0.14.0 · **Estado:** disponible
+**Versión:** 0.15.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -34,7 +34,8 @@ stateDiagram-v2
     Borrador --> Anulada
     Devuelta --> Anulada
     Aprobada --> Anulada: sin orden de compra
-    Aprobada --> Atendida: órdenes de compra (Compras)
+    Aprobada --> Atendida: Compras la incluye en una orden
+    Atendida --> Aprobada: la orden se rechaza, se anula o se quita
     Rechazada --> [*]
 ```
 
@@ -45,7 +46,7 @@ stateDiagram-v2
 | Devuelta | Un aprobador pidió corregir algo | Solicitante |
 | Rechazada | No procede; es final | — |
 | Aprobada | Lista para Compras; ya no se edita | Compras |
-| Parcialmente atendida / Atendida | Tiene órdenes de compra por parte o por todo | Compras (semana 5) |
+| Atendida | Está completa en una orden de compra (se muestra su número); ya no está disponible para otra | Compras |
 | Anulada | Se dejó sin efecto, con motivo | — |
 
 ## 4. Pantallas y campos
@@ -66,7 +67,7 @@ Pestañas: **Por aprobar** (con contador; muestra las de todas tus empresas), **
 
 ### Reglas de aprobación
 
-Por empresa. Lista con prioridad, condiciones y un resumen de cada nivel. Al editar:
+Por empresa, con una pestaña para solicitudes y otra para órdenes de compra. Lista con prioridad, condiciones y un resumen de cada nivel. Al editar:
 
 | Campo | Regla |
 | --- | --- |
@@ -100,7 +101,7 @@ Por empresa. Lista con prioridad, condiciones y un resumen de cada nivel. Al edi
 ## 6. Reportes disponibles
 
 - Lista de solicitudes por estado, con quién la tiene pendiente.
-- Reporte de solicitudes y órdenes en Excel: semana 5.
+- Reporte de solicitudes y órdenes en Excel: siguiente entrega.
 
 ## 7. Configuración por país
 
@@ -118,4 +119,4 @@ La moneda de comparación de montos es la moneda funcional de la empresa (PEN en
 
 ## Referencia técnica
 
-Motor de aprobación: [ADR-006](../adr/0006-motor-de-aprobacion.md). API: `/api/v1/solicitudes` (ver `/docs` de la API).
+Motor de aprobación: [ADR-006](../adr/0006-motor-de-aprobacion.md). API: `/api/v1/solicitudes`; reglas en `/api/v1/aprobaciones?documento=solicitud` (ver `/docs` de la API). Órdenes de compra: [Compras](compras.md).

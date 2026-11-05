@@ -402,3 +402,17 @@ input[type="file"] { padding: 8px; }
 .buscador-articulo .lista-simple { margin: 0; padding: 4px 0; list-style: none; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--superficie); max-height: 240px; overflow-y: auto; }
 .buscador-articulo .lista-simple li { padding: 4px 12px; }
 .buscador-articulo .lista-simple button { text-align: left; width: 100%; }
+
+/* ---------- órdenes de compra ---------- */
+.sol-enviada { background: #e6f4f1; color: #0b5a4f; }
+.totales-oc { display: grid; grid-template-columns: auto auto; justify-content: end; gap: 4px 24px; font-size: 15px; }
+.totales-oc strong { text-align: right; font-variant-numeric: tabular-nums; }
+.totales-oc .total-final { font-size: 18px; }
+.formato-oc { display: grid; grid-template-columns: minmax(320px, 440px) 1fr; gap: 24px; align-items: start; }
+.vista-pdf { position: sticky; top: 16px; border: 1px solid var(--linea); border-radius: var(--radio); background: #e5e7eb; min-height: 70vh; }
+.vista-pdf iframe { width: 100%; height: 80vh; border: 0; border-radius: var(--radio); }
+.lista-orden { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.lista-orden li { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.columnas-check { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
+@media (max-width: 900px) { .formato-oc { grid-template-columns: 1fr; } .vista-pdf { position: static; } }
+input[type="color"] { height: 42px; padding: 4px 6px; cursor: pointer; }

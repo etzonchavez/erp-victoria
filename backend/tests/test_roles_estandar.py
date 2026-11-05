@@ -166,9 +166,9 @@ def test_codigo_valido_por_modulo(client, admin):
 
 
 def test_codigo_en_minusculas_se_normaliza(client, admin):
-    r = nuevo_rol(client, admin, "erp_com_comprador", "compras")
+    r = nuevo_rol(client, admin, "erp_com_comprador_senior", "compras")
     assert r.status_code == 201
-    assert r.json()["codigo"] == "ERP_COM_COMPRADOR"
+    assert r.json()["codigo"] == "ERP_COM_COMPRADOR_SENIOR"
 
 
 def test_codigo_fuera_de_nomenclatura_es_rechazado(client, admin):

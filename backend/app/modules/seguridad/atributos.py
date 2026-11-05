@@ -308,6 +308,11 @@ def copiar_valores(db: Session, origen: str, destino: str, nivel: str, valores: 
     return copia
 
 
+def nombres_activos(db: Session, documento: str, nivel: str) -> dict[str, str]:
+    """{columna: nombre} de los atributos activos, en orden de ranura (para imprimir)."""
+    return {c: a.nombre for c, a in sorted(_activos(db, documento, nivel).items())}
+
+
 def leer_valores(objeto, documento: str, nivel: str, db: Session) -> dict:
     """Atributos activos de un documento guardado, para devolverlos en la API."""
     return {columna: getattr(objeto, columna) for columna in _activos(db, documento, nivel)}
@@ -315,6 +320,7 @@ def leer_valores(objeto, documento: str, nivel: str, db: Session) -> dict:
 
 __all__ = [
     "copiar_valores",
+    "nombres_activos",
     "definir",
     "leer_valores",
     "listar",

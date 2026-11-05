@@ -101,6 +101,18 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("solicitudes.solicitud.anular", "Anular solicitudes aprobadas sin orden de compra"),
     PermisoDef("solicitudes.regla.ver", "Ver las reglas de aprobación"),
     PermisoDef("solicitudes.regla.editar", "Crear y editar las reglas de aprobación"),
+    # Órdenes de compra. Para aprobar no hace falta permiso: aprueba quien la regla designa.
+    PermisoDef(
+        "compras.orden.crear", "Emitir órdenes de compra, enviarlas a aprobación y al proveedor"
+    ),
+    PermisoDef(
+        "compras.orden.ver",
+        "Ver todas las órdenes de las empresas y unidades a las que tiene acceso",
+    ),
+    PermisoDef("compras.orden.anular", "Anular órdenes aprobadas o enviadas al proveedor"),
+    PermisoDef("compras.regla.ver", "Ver las reglas de aprobación de órdenes"),
+    PermisoDef("compras.regla.editar", "Crear y editar las reglas de aprobación de órdenes"),
+    PermisoDef("compras.formato.editar", "Configurar el formato PDF de la orden de compra"),
 ]
 
 
@@ -325,5 +337,42 @@ ROLES_ESTANDAR: list[RolDef] = [
         "consulta",
         "Consulta las solicitudes y las reglas de aprobación sin poder cambiarlas.",
         ["solicitudes.solicitud.ver", "solicitudes.regla.ver"],
+    ),
+    RolDef(
+        "ERP_COM_ADMINISTRADOR",
+        "compras",
+        "Administrador de compras",
+        "administrador",
+        "Configura reglas y formato de la orden, ve todas las órdenes y anula las emitidas.",
+        [p.codigo for p in PERMISOS if p.modulo == "compras"],
+    ),
+    RolDef(
+        "ERP_COM_COMPRADOR",
+        "compras",
+        "Comprador",
+        "operativo",
+        "Emite órdenes de compra desde solicitudes aprobadas o directas y las envía al proveedor.",
+        ["compras.orden.crear", "compras.orden.ver"],
+    ),
+    RolDef(
+        "ERP_COM_CONFIGURADOR",
+        "compras",
+        "Configurador de compras",
+        "configuracion",
+        "Define las reglas de aprobación y el formato PDF de la orden de compra.",
+        [
+            "compras.regla.ver",
+            "compras.regla.editar",
+            "compras.formato.editar",
+            "compras.orden.ver",
+        ],
+    ),
+    RolDef(
+        "ERP_COM_CONSULTA",
+        "compras",
+        "Consulta de compras",
+        "consulta",
+        "Consulta las órdenes de compra y sus reglas de aprobación sin poder cambiarlas.",
+        ["compras.orden.ver", "compras.regla.ver"],
     ),
 ]

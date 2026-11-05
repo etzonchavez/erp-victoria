@@ -7,7 +7,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Date, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Date, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.atributos import ConAtributos
@@ -19,8 +19,7 @@ ESTADOS = {
     "devuelta": "Devuelta",
     "rechazada": "Rechazada",
     "aprobada": "Aprobada",
-    "parcialmente_atendida": "Parcialmente atendida",
-    "atendida": "Atendida",
+    "atendida": "Atendida",  # incluida completa en una orden de compra
     "anulada": "Anulada",
 }
 EDITABLES = {"borrador", "devuelta"}
@@ -55,6 +54,9 @@ class Solicitud(ConAtributos, ConAuditoria, Base):
     total_funcional: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=0)
     estado: Mapped[str] = mapped_column(String(25), default="borrador", index=True)
     ronda: Mapped[int] = mapped_column(Integer, default=0)  # envíos a aprobación
+    # Orden de compra que la atiende (la fija Compras; texto para no depender de ese módulo)
+    orden_compra_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    orden_compra_numero: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     lineas: Mapped[list["Linea"]] = relationship(
         lazy="selectin", order_by="Linea.numero", cascade="all, delete-orphan"

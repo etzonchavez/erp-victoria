@@ -6,6 +6,7 @@ Cada módulo que precarga datos agrega aquí su función `preparar`.
 from sqlalchemy.orm import Session
 
 import app.modules.aprobaciones.models  # noqa: F401  registra las tablas
+import app.modules.compras.models  # noqa: F401
 import app.modules.contabilidad.models  # noqa: F401
 import app.modules.contabilidad.service  # noqa: F401  se suscribe a empresa_creada
 import app.modules.maestros.models  # noqa: F401

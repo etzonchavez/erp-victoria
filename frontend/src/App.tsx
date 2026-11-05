@@ -9,6 +9,8 @@ import CondicionesPago from "./paginas/CondicionesPago";
 import Impuestos from "./paginas/Impuestos";
 import PerfilesContables from "./paginas/PerfilesContables";
 import PlanCuentas from "./paginas/PlanCuentas";
+import FormatoOrden from "./paginas/FormatoOrden";
+import OrdenesCompra from "./paginas/OrdenesCompra";
 import Proveedores from "./paginas/Proveedores";
 import ReglasAprobacion from "./paginas/ReglasAprobacion";
 import Solicitudes from "./paginas/Solicitudes";
@@ -38,7 +40,15 @@ const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[]
     rutas: [
       // Sin permiso: cualquiera puede ser aprobador; la pantalla muestra lo que le corresponde
       { ruta: "solicitudes", nombre: "Solicitudes de compra", pagina: () => <Solicitudes /> },
-      { ruta: "reglas-aprobacion", nombre: "Reglas de aprobación", permiso: "solicitudes.regla.ver", pagina: () => <ReglasAprobacion /> },
+      { ruta: "reglas-aprobacion", nombre: "Reglas de aprobación", permiso: ["solicitudes.regla.ver", "compras.regla.ver"], pagina: () => <ReglasAprobacion /> },
+    ],
+  },
+  {
+    modulo: "compras",
+    grupo: "negocio",
+    rutas: [
+      { ruta: "ordenes-compra", nombre: "Órdenes de compra", pagina: () => <OrdenesCompra /> },
+      { ruta: "formato-oc", nombre: "Formato de la orden", permiso: "compras.formato.editar", pagina: () => <FormatoOrden /> },
     ],
   },
   {
