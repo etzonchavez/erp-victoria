@@ -59,7 +59,11 @@ export default function Solicitudes() {
   const [lista, setLista] = useState<SolicitudResumen[]>([]);
   const [porAprobar, setPorAprobar] = useState<SolicitudResumen[]>([]);
   const [error, setError] = useState<unknown>(null);
-  const [vista, setVista] = useState<Vista>(null);
+  // Enlace directo (notificaciones): #/solicitudes?id=<documento>
+  const [vista, setVista] = useState<Vista>(() => {
+    const id = parametroRuta("id");
+    return id ? { modo: "ver", id } : null;
+  });
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -80,7 +84,11 @@ export default function Solicitudes() {
     cargar();
   }, [cargar]);
 
-  const cerrar = useCallback(() => setVista(null), []);
+  const cerrar = useCallback(() => {
+    setVista(null);
+    // Quita ?id= del enlace directo sin recargar la pantalla
+    if (parametroRuta("id")) window.history.replaceState(null, "", "#/solicitudes");
+  }, []);
   const pestanas: { codigo: Alcance; nombre: string; visible: boolean }[] = [
     { codigo: "por_aprobar", nombre: "Por aprobar", visible: true },
     { codigo: "mias", nombre: "Mis solicitudes", visible: crear },

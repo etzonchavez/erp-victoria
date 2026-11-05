@@ -14,6 +14,7 @@ from app.modules.contabilidad.models import (
     ArticuloPerfil,
     CategoriaPerfil,
     CentroCosto,
+    ConfiguracionCxP,
     Cuenta,
     Impuesto,
     Perfil,
@@ -1023,3 +1024,115 @@ def obtener_impuesto(db: Session, impuesto_id: uuid.UUID) -> Impuesto:
     if not imp:
         raise no_encontrado("El impuesto")
     return imp
+
+
+# ---------------------------------------------------------------- cuentas por pagar
+
+MOMENTOS = {
+    "recepcion": "Al recibir",
+    "facturacion": "Al facturar",
+}
+# Decisión de Et (5 nov 2026): bienes al recibir, servicios al facturar
+MOMENTOS_POR_DEFECTO = {
+    "bien_inventariable": "recepcion",
+    "bien_no_inventariable": "recepcion",
+    "activo_fijo": "recepcion",
+    "servicio": "facturacion",
+}
+CUENTA_RECEPCION_SUGERIDA = "4211"  # PCGE: facturas no emitidas
+
+
+def _asegurar_4211(db: Session, empresa_id: uuid.UUID) -> None:
+    """Empresas creadas antes de 0.17.0 no tienen la 4211: se agrega bajo la 421 si existe."""
+    cuentas = {c.codigo: c for c in listar_cuentas(db, empresa_id)}
+    padre = cuentas.get("421")
+    if padre and CUENTA_RECEPCION_SUGERIDA not in cuentas:
+        cuenta = Cuenta(
+            empresa_id=empresa_id,
+            codigo=CUENTA_RECEPCION_SUGERIDA,
+            nombre="No emitidas",
+            padre_id=padre.id,
+            nivel=padre.nivel + 1,
+            naturaleza=padre.naturaleza,
+            imputable=True,
+            plantilla="PCGE-2019",
+        )
+        db.add(cuenta)
+        db.flush()
+
+
+def obtener_config_cxp(db: Session, empresa_id: uuid.UUID) -> ConfiguracionCxP:
+    """Configuración de la empresa; la crea con los valores por defecto si no existe."""
+    maestros.obtener_empresa(db, empresa_id)
+    config = db.get(ConfiguracionCxP, empresa_id)
+    if not config:
+        _asegurar_4211(db, empresa_id)
+        sugerida = db.scalar(
+            select(Cuenta).where(
+                Cuenta.empresa_id == empresa_id,
+                Cuenta.codigo == CUENTA_RECEPCION_SUGERIDA,
+                Cuenta.activo.is_(True),
+            )
+        )
+        config = ConfiguracionCxP(
+            empresa_id=empresa_id,
+            momentos=dict(MOMENTOS_POR_DEFECTO),
+            cuenta_recepcion_id=sugerida.id if sugerida else None,
+        )
+        db.add(config)
+        db.commit()
+    return config
+
+
+def momentos_cxp(config: ConfiguracionCxP) -> dict[str, str]:
+    guardados = {
+        k: v
+        for k, v in (config.momentos or {}).items()
+        if k in MOMENTOS_POR_DEFECTO and v in MOMENTOS
+    }
+    return {**MOMENTOS_POR_DEFECTO, **guardados}
+
+
+def momento_de(db: Session, empresa_id: uuid.UUID, tipo_articulo: str) -> str:
+    return momentos_cxp(obtener_config_cxp(db, empresa_id))[tipo_articulo]
+
+
+def guardar_config_cxp(
+    db: Session, actor: Usuario, empresa_id: uuid.UUID, momentos: dict, cuenta_recepcion_id
+) -> ConfiguracionCxP:
+    config = obtener_config_cxp(db, empresa_id)
+    for tipo, momento in momentos.items():
+        if tipo not in MOMENTOS_POR_DEFECTO:
+            raise ErrorERP(422, "tipo_invalido", f"Tipo de artículo inexistente: {tipo}")
+        if momento not in MOMENTOS:
+            raise ErrorERP(422, "momento_invalido", "El momento debe ser al recibir o al facturar")
+    nuevos = {**momentos_cxp(config), **momentos}
+    if cuenta_recepcion_id:
+        cuenta = obtener_cuenta(db, cuenta_recepcion_id)
+        if cuenta.empresa_id != empresa_id or not cuenta.activo or not cuenta.imputable:
+            raise ErrorERP(
+                422,
+                "cuenta_invalida",
+                "La cuenta puente debe ser una cuenta activa e imputable de esta empresa",
+            )
+    elif "recepcion" in nuevos.values():
+        raise ErrorERP(
+            422,
+            "cuenta_recepcion_requerida",
+            "Si algún tipo se reconoce al recibir, elige la cuenta puente (por ejemplo 4211 "
+            "Facturas no emitidas)",
+        )
+    antes = {"momentos": momentos_cxp(config), "cuenta": _txt(config.cuenta_recepcion_id)}
+    config.momentos = nuevos
+    config.cuenta_recepcion_id = cuenta_recepcion_id or None
+    config.actualizado_por = actor.id
+    auditar(
+        db,
+        actor,
+        "editar",
+        "config_cxp",
+        empresa_id,
+        {"antes": antes, "despues": {"momentos": nuevos, "cuenta": _txt(cuenta_recepcion_id)}},
+    )
+    db.commit()
+    return config

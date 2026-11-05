@@ -10,7 +10,7 @@ from app.core import atributos as nucleo_atributos
 from app.core.database import get_db
 from app.core.errors import no_encontrado
 from app.core.security import crear_token
-from app.modules.seguridad import atributos, catalogo, service
+from app.modules.seguridad import atributos, catalogo, notificaciones, service
 from app.modules.seguridad.deps import requiere, usuario_actual
 from app.modules.seguridad.models import Rol, Usuario
 from app.modules.seguridad.schemas import (
@@ -21,6 +21,8 @@ from app.modules.seguridad.schemas import (
     LoginEntrada,
     ModuloCambio,
     ModuloSalida,
+    Notificaciones,
+    NotificacionSalida,
     Opcion,
     PermisoSalida,
     PersonalizacionCambio,
@@ -186,6 +188,36 @@ def crear_usuario(
     db: Session = Depends(get_db),
 ):
     return service.crear_usuario(db, actor, datos.model_dump())
+
+
+@router.get("/notificaciones", response_model=Notificaciones, summary="Mis notificaciones")
+def mis_notificaciones(
+    solo_no_leidas: bool = False,
+    usuario: Usuario = Depends(usuario_actual),
+    db: Session = Depends(get_db),
+):
+    return {
+        "no_leidas": notificaciones.no_leidas(db, usuario),
+        "items": notificaciones.listar(db, usuario, solo_no_leidas),
+    }
+
+
+@router.post(
+    "/notificaciones/{notificacion_id}/leida",
+    response_model=NotificacionSalida,
+    summary="Marcar como leída",
+)
+def leer_notificacion(
+    notificacion_id: uuid.UUID,
+    usuario: Usuario = Depends(usuario_actual),
+    db: Session = Depends(get_db),
+):
+    return notificaciones.marcar_leida(db, usuario, notificacion_id)
+
+
+@router.post("/notificaciones/leidas", summary="Marcar todas como leídas")
+def leer_todas(usuario: Usuario = Depends(usuario_actual), db: Session = Depends(get_db)):
+    return {"marcadas": notificaciones.marcar_todas(db, usuario)}
 
 
 @router.get(

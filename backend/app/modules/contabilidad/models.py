@@ -1,12 +1,23 @@
 """Tablas de la contabilidad base (prefijo cnt_). Todo es por empresa (ADR-004)."""
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, UniqueConstraint, Uuid
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base, ConAuditoria
+from app.core.database import Base, ConAuditoria, ahora_utc
 from app.modules.seguridad.models import Usuario
 
 
@@ -126,3 +137,25 @@ class ArticuloPerfil(ConAuditoria, Base):
     perfil_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cnt_perfil.id"))
 
     perfil: Mapped[Perfil] = relationship(lazy="joined")
+
+
+class ConfiguracionCxP(Base):
+    """Cuándo se reconoce el cargo de una compra, por tipo de artículo, y su cuenta puente.
+
+    momentos: {"bien_inventariable": "recepcion", "servicio": "facturacion", ...}
+    - recepcion: al recibir, Debe gasto/existencia · Haber cuenta puente (4211 no emitidas);
+      al facturar, Debe cuenta puente + IGV · Haber cuenta por pagar del perfil (4212).
+    - facturacion: al facturar, Debe gasto/existencia + IGV · Haber cuenta por pagar (4212).
+    """
+
+    __tablename__ = "cnt_config_cxp"
+
+    empresa_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("mae_empresa.id"), primary_key=True)
+    momentos: Mapped[dict] = mapped_column(JSON, default=dict)
+    cuenta_recepcion_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("cnt_cuenta.id"), nullable=True
+    )
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=ahora_utc, onupdate=ahora_utc
+    )
+    actualizado_por: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)

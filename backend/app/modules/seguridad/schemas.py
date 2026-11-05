@@ -192,3 +192,20 @@ class AtributoCambio(BaseModel):
     valores: list[str] = Field(default_factory=list)
     copiar_documento: str | None = None
     copiar_numero: int | None = None
+
+
+class NotificacionSalida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tipo: str
+    titulo: str
+    mensaje: str
+    enlace: str
+    creado_en: datetime
+    leida_en: datetime | None
+
+
+class Notificaciones(BaseModel):
+    no_leidas: int
+    items: list[NotificacionSalida]

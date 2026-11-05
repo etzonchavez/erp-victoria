@@ -1,6 +1,6 @@
 # Órdenes de compra
 
-**Versión:** 0.15.0 · **Estado:** disponible
+**Versión:** 0.17.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -73,7 +73,7 @@ Pestañas **Por aprobar** (con contador), **Mis órdenes** y **Todas**. La lista
 
 **Una línea por cada línea de solicitud:** si el mismo artículo viene en dos solicitudes, van en dos líneas para no perder de dónde vino cada una.
 
-**Detalle:** líneas con su origen, totales, *Quién aprobará* antes de enviar, historial de aprobación, y los botones Ver PDF, Editar, Enviar, Anular, Aprobar / Devolver / Rechazar y **Marcar enviada al proveedor**.
+**Detalle:** líneas con su origen, totales, *Quién aprobará* antes de enviar, historial de aprobación, vista previa del asiento contable, y los botones Ver PDF, Editar, Enviar, Anular, Aprobar / Devolver / Rechazar y **Marcar enviada al proveedor**.
 
 ### Formato de la orden
 
@@ -99,7 +99,8 @@ En *Solicitudes → Reglas de aprobación*, pestaña **Órdenes de compra**. Fun
 
 - Lista de órdenes por estado, con proveedor, solicitudes de origen y quién la tiene pendiente.
 - PDF de la orden.
-- Reporte de solicitudes y órdenes en Excel: siguiente entrega.
+- **Reporte de compras** (Inicio → Compras → Reporte de compras, permiso `compras.orden.ver`): Excel con una fila por línea de orden y su solicitud de origen (número, fecha, estado y solicitante). Filtros: empresa, rango de fechas, estado de la orden, proveedor y unidad de negocio. Opcionalmente incluye las líneas de solicitudes que aún no tienen orden (estado *Sin orden*); esas no se filtran por estado ni proveedor. Solo entran las unidades a las que el usuario tiene acceso.
+- **Asiento contable (vista previa)** en el detalle de cada orden: según *Reconocimiento del cargo* de [Contabilidad](contabilidad.md#reconocimiento-del-cargo-cuentas-por-pagar).
 
 ## 7. Configuración por país
 

@@ -92,6 +92,11 @@ PERMISOS: list[PermisoDef] = [
     PermisoDef("contabilidad.centro_costo.editar", "Crear y editar centros de costo"),
     PermisoDef("contabilidad.impuesto.ver", "Ver impuestos"),
     PermisoDef("contabilidad.impuesto.editar", "Crear y editar impuestos"),
+    PermisoDef("contabilidad.cxp.ver", "Ver cuándo se reconoce el cargo de las compras"),
+    PermisoDef(
+        "contabilidad.cxp.editar",
+        "Definir cuándo se reconoce el cargo (al recibir o al facturar) y su cuenta puente",
+    ),
     # Solicitudes de compra. Para aprobar no hace falta permiso: aprueba quien la regla designa.
     PermisoDef("solicitudes.solicitud.crear", "Registrar y enviar solicitudes propias"),
     PermisoDef(
@@ -291,6 +296,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "contabilidad.centro_costo.ver",
             "contabilidad.centro_costo.editar",
             "contabilidad.impuesto.ver",
+            "contabilidad.cxp.ver",
         ],
     ),
     RolDef(
@@ -304,6 +310,7 @@ ROLES_ESTANDAR: list[RolDef] = [
             "contabilidad.perfil.ver",
             "contabilidad.centro_costo.ver",
             "contabilidad.impuesto.ver",
+            "contabilidad.cxp.ver",
         ],
     ),
     RolDef(

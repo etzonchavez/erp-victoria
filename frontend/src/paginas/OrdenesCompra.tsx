@@ -50,7 +50,11 @@ export default function OrdenesCompra() {
   const [lista, setLista] = useState<OrdenResumen[]>([]);
   const [porAprobar, setPorAprobar] = useState<OrdenResumen[]>([]);
   const [error, setError] = useState<unknown>(null);
-  const [vista, setVista] = useState<Vista>(null);
+  // Enlace directo (notificaciones): #/ordenes-compra?id=<documento>
+  const [vista, setVista] = useState<Vista>(() => {
+    const id = parametroRuta("id");
+    return id ? { modo: "ver", id } : null;
+  });
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -70,7 +74,11 @@ export default function OrdenesCompra() {
   useEffect(() => {
     cargar();
   }, [cargar]);
-  const cerrar = useCallback(() => setVista(null), []);
+  const cerrar = useCallback(() => {
+    setVista(null);
+    // Quita ?id= del enlace directo sin recargar la pantalla
+    if (parametroRuta("id")) window.history.replaceState(null, "", "#/ordenes-compra");
+  }, []);
 
   const pestanas: { codigo: Alcance; nombre: string; visible: boolean }[] = [
     { codigo: "por_aprobar", nombre: "Por aprobar", visible: true },
@@ -883,6 +891,8 @@ function DetalleOrden({ id, onEditar, onCambio }: { id: string; onEditar: (o: Or
         </div>
       )}
 
+      <AsientoOrden id={o.id} />
+
       {anulando && (
         <div className="decision">
           <label>
@@ -926,5 +936,83 @@ function DetalleOrden({ id, onEditar, onCambio }: { id: string; onEditar: (o: Or
         )}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- asiento contable (vista previa)
+
+type FilaAsiento = { cuenta: string; nombre: string; centro_costo: string | null; glosa: string; debe: string; haber: string };
+type AsientoPrevio = {
+  moneda: string;
+  moneda_funcional: string;
+  tipo_cambio: string;
+  asientos: { momento: string; titulo: string; filas: FilaAsiento[]; debe: string; haber: string; cuadra: boolean }[];
+  avisos: string[];
+};
+
+function AsientoOrden({ id }: { id: string }) {
+  const [abierto, setAbierto] = useState(false);
+  const [datos, setDatos] = useState<AsientoPrevio | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useEffect(() => {
+    if (!abierto || datos) return;
+    api<AsientoPrevio>(`/compras/ordenes/${id}/asiento`).then(setDatos).catch(setError);
+  }, [abierto, datos, id]);
+  return (
+    <details className="subseccion asiento" onToggle={(e) => setAbierto((e.target as HTMLDetailsElement).open)}>
+      <summary>
+        <h3>Asiento contable (vista previa)</h3>
+      </summary>
+      <MensajeError error={error} />
+      {datos && (
+        <>
+          <p className="tenue">
+            No se contabiliza: muestra cómo quedará el registro según la configuración de Contabilidad (Configuración › Cuentas por pagar).
+            Importes en {datos.moneda}.
+          </p>
+          {datos.avisos.map((a) => (
+            <p key={a} className="aviso aviso-advertencia">
+              {a}
+            </p>
+          ))}
+          {datos.asientos.map((a) => (
+            <div key={a.momento} className="tabla-contenedor">
+              <table className="tabla tabla-compacta">
+                <caption>{a.titulo}</caption>
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Centro</th>
+                    <th>Glosa</th>
+                    <th className="numero">Debe</th>
+                    <th className="numero">Haber</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {a.filas.map((f, i) => (
+                    <tr key={i}>
+                      <td>
+                        <span className="fuerte">{f.cuenta}</span> {f.nombre}
+                      </td>
+                      <td>{f.centro_costo ?? ""}</td>
+                      <td>{f.glosa}</td>
+                      <td className="numero">{Number(f.debe) ? monto(f.debe) : ""}</td>
+                      <td className="numero">{Number(f.haber) ? monto(f.haber) : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colSpan={3}>{a.cuadra ? "Totales" : "Totales · no cuadra, revisa la configuración"}</th>
+                    <th className="numero">{monto(a.debe)}</th>
+                    <th className="numero">{monto(a.haber)}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          ))}
+        </>
+      )}
+    </details>
   );
 }

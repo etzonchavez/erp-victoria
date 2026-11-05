@@ -186,3 +186,35 @@ class FormatoSalida(BaseModel):
 
 class FormatoDatos(BaseModel):
     configuracion: dict
+
+
+class FilaAsiento(BaseModel):
+    cuenta: str
+    nombre: str
+    centro_costo: str | None
+    glosa: str
+    debe: Decimal
+    haber: Decimal
+
+
+class Asiento(BaseModel):
+    momento: str
+    titulo: str
+    filas: list[FilaAsiento]
+    debe: Decimal
+    haber: Decimal
+    cuadra: bool
+
+
+class MomentoTipo(BaseModel):
+    tipo_articulo: str
+    momento: str
+
+
+class AsientoPrevio(BaseModel):
+    moneda: str
+    moneda_funcional: str
+    tipo_cambio: Decimal
+    asientos: list[Asiento]
+    avisos: list[str]
+    momentos: list[MomentoTipo]

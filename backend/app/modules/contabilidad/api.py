@@ -14,6 +14,8 @@ from app.modules.contabilidad.schemas import (
     CentroCambio,
     CentroCrear,
     CentroSalida,
+    ConfigCxPCambio,
+    ConfigCxPSalida,
     CuentaCambio,
     CuentaCrear,
     CuentaSalida,
@@ -28,6 +30,7 @@ from app.modules.contabilidad.schemas import (
     PlantillaResultado,
     SugeridosResultado,
 )
+from app.modules.maestros import datos_base
 from app.modules.maestros import service as maestros
 from app.modules.maestros.deps import acceso_empresa_de_ruta
 from app.modules.seguridad.deps import requiere
@@ -332,3 +335,54 @@ def codigos_impuesto(
     _: Usuario = Depends(requiere("maestros.articulo.ver")), db: Session = Depends(get_db)
 ):
     return service.codigos_impuesto(db)
+
+
+# ---------------------------------------------------------------- cuentas por pagar
+
+
+def _config_cxp(db: Session, config) -> dict:
+    cuenta = (
+        service.obtener_cuenta(db, config.cuenta_recepcion_id)
+        if config.cuenta_recepcion_id
+        else None
+    )
+    momentos = service.momentos_cxp(config)
+    return {
+        "momentos": [
+            {"tipo_articulo": t, "nombre": datos_base.TIPOS_ARTICULO[t], "momento": momentos[t]}
+            for t in service.MOMENTOS_POR_DEFECTO
+        ],
+        "opciones": [{"codigo": k, "nombre": v} for k, v in service.MOMENTOS.items()],
+        "cuenta_recepcion_id": config.cuenta_recepcion_id,
+        "cuenta_recepcion": f"{cuenta.codigo} {cuenta.nombre}" if cuenta else None,
+    }
+
+
+@router.get(
+    "/empresas/{empresa_id}/reconocimiento",
+    response_model=ConfigCxPSalida,
+    summary="Cuándo se reconoce el cargo de las compras (al recibir o al facturar)",
+)
+def reconocimiento(
+    empresa_id: uuid.UUID,
+    _: Usuario = Depends(requiere("contabilidad.cxp.ver")),
+    db: Session = Depends(get_db),
+):
+    return _config_cxp(db, service.obtener_config_cxp(db, empresa_id))
+
+
+@router.put(
+    "/empresas/{empresa_id}/reconocimiento",
+    response_model=ConfigCxPSalida,
+    summary="Guardar el momento de reconocimiento por tipo de artículo y la cuenta puente",
+)
+def guardar_reconocimiento(
+    empresa_id: uuid.UUID,
+    datos: ConfigCxPCambio,
+    actor: Usuario = Depends(requiere("contabilidad.cxp.editar")),
+    db: Session = Depends(get_db),
+):
+    config = service.guardar_config_cxp(
+        db, actor, empresa_id, datos.momentos, datos.cuenta_recepcion_id
+    )
+    return _config_cxp(db, config)

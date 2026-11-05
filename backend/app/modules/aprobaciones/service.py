@@ -37,6 +37,7 @@ from app.modules.aprobaciones.models import (
 from app.modules.contabilidad import service as contabilidad
 from app.modules.maestros import datos_base
 from app.modules.maestros import service as maestros
+from app.modules.seguridad import notificaciones
 from app.modules.seguridad import service as seguridad
 from app.modules.seguridad.models import Rol, Usuario
 from app.modules.seguridad.service import auditar
@@ -57,6 +58,9 @@ class Contexto:
     categorias: set[uuid.UUID] = field(default_factory=set)  # incluye las categorías padre
     tipos: set[str] = field(default_factory=set)
     centros: list[uuid.UUID] = field(default_factory=list)
+    # Para los avisos: "Solicitud SC-2026-000001 · Útiles de oficina" y ruta del frontend
+    referencia: str = ""
+    enlace: str = ""
 
 
 # ---------------------------------------------------------------- reglas
@@ -421,6 +425,38 @@ def _avanzar(pasos: list[Paso]) -> str:
     return "aprobado"
 
 
+def _avisar_pendientes(db: Session, ctx: Contexto, pasos: list[Paso]) -> None:
+    """Avisa a quien le toca aprobar (una vez por paso). Un rol avisa a sus usuarios con acceso."""
+    for p in pasos:
+        if p.estado != "pendiente" or p.notificado:
+            continue
+        if p.usuario_id:
+            destino = [p.usuario_id]
+        else:
+            destino = []
+            for u in seguridad.usuarios_con_rol(db, p.rol_id):
+                if u.id == ctx.solicitante_id:
+                    continue
+                try:
+                    maestros.verificar_acceso_unidad(db, u, ctx.unidad_negocio_id)
+                except ErrorERP:
+                    continue
+                destino.append(u.id)
+        notificaciones.notificar(
+            db,
+            destino,
+            "por_aprobar",
+            f"Por aprobar: {ctx.referencia}"
+            if ctx.referencia
+            else "Tienes un documento por aprobar",
+            f"Nivel {p.nivel} · {MODOS[p.modo].split(':')[0].lower()}. Revísalo y decide.",
+            ctx.enlace,
+            ctx.documento,
+            ctx.documento_id,
+        )
+        p.notificado = True
+
+
 def iniciar(db: Session, ctx: Contexto, ronda: int) -> str:
     regla, plan = planificar(db, ctx)
     pasos = []
@@ -436,7 +472,9 @@ def iniciar(db: Session, ctx: Contexto, ronda: int) -> str:
         db.add(paso)
         pasos.append(paso)
     db.flush()
-    return _avanzar(pasos)
+    resultado = _avanzar(pasos)
+    _avisar_pendientes(db, ctx, pasos)
+    return resultado
 
 
 def puede_actuar(db: Session, usuario: Usuario, paso: Paso, ctx: Contexto) -> bool:
@@ -476,7 +514,9 @@ def actuar(
     mio.actuado_por, mio.actuado_por_nombre = actor.id, actor.nombre
     mio.actuado_en, mio.comentario = ahora_utc(), comentario
     if accion == "aprobar":
-        return _avanzar(pasos)
+        resultado = _avanzar(pasos)
+        _avisar_pendientes(db, ctx, pasos)
+        return resultado
     for p in pasos:
         if p.estado in ("en_espera", "pendiente"):
             p.estado = "cancelado"

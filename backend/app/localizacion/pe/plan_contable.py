@@ -62,6 +62,7 @@ CUENTAS: list[tuple[str, str]] = [
     ("40111", "IGV – Cuenta propia"),
     ("42", "Cuentas por pagar comerciales – Terceros"),
     ("421", "Facturas, boletas y otros comprobantes por pagar"),
+    ("4211", "No emitidas"),
     ("4212", "Emitidas"),
     ("46", "Cuentas por pagar diversas – Terceros"),
     ("465", "Pasivos por compra de activo inmovilizado"),

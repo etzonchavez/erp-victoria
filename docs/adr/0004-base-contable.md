@@ -49,3 +49,7 @@ Un artículo no se puede guardar si su perfil no se resuelve o si el tipo del pe
 - **Cuentas directamente en cada artículo:** mucha carga de datos y errores; no escala.
 - **Cuentas directamente en cada categoría, sin perfiles:** obliga a repetir las mismas 5 cuentas en decenas de categorías.
 - **Contabilidad completa antes de la demo:** pone en riesgo la fecha del 4 de diciembre.
+
+## Actualización (5 nov 2026)
+
+Se agregó la configuración **Reconocimiento del cargo** por tipo de artículo (al recibir o al facturar) con cuenta puente 4211 «Facturas no emitidas». La vista previa del asiento de la orden muestra uno o dos asientos según esa configuración. Detalle en [Contabilidad](../modulos/contabilidad.md#reconocimiento-del-cargo-cuentas-por-pagar).

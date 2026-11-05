@@ -157,3 +157,25 @@ class AtributoValor(Base):
     )
     valor: Mapped[str] = mapped_column(String(240))
     orden: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Notificacion(Base):
+    """Aviso para un usuario: algo por aprobar o el resultado de un documento suyo."""
+
+    __tablename__ = "seg_notificacion"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    usuario_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("seg_usuario.id", ondelete="CASCADE"), index=True
+    )
+    # por_aprobar, aprobado, rechazado, devuelto, atendida, enviada
+    tipo: Mapped[str] = mapped_column(String(30))
+    titulo: Mapped[str] = mapped_column(String(150))
+    mensaje: Mapped[str] = mapped_column(String(300))
+    enlace: Mapped[str] = mapped_column(String(200))  # ruta del frontend: solicitudes?id=...
+    documento: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    documento_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=ahora_utc, index=True
+    )
+    leida_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

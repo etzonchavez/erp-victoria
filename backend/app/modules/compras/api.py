@@ -1,16 +1,19 @@
 """Rutas de órdenes de compra y su formato PDF: /api/v1/compras/..."""
 
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.aprobaciones import presentacion
-from app.modules.compras import pdf, service
+from app.modules.compras import asiento, pdf, service
+from app.modules.compras import reporte as reporte_excel
 from app.modules.compras.models import ESTADOS, Orden
 from app.modules.compras.schemas import (
     ArticuloOpcion,
+    AsientoPrevio,
     Comentario,
     FormatoDatos,
     FormatoSalida,
@@ -313,6 +316,43 @@ def vista_previa(
     return _respuesta_pdf(pdf.pdf_vista_previa(db, empresa_id, datos.configuracion), "vista-previa")
 
 
+# ---------------------------------------------------------------- reporte
+
+
+@router.get(
+    "/empresas/{empresa_id}/reporte",
+    summary="Reporte Excel de solicitudes y órdenes",
+    response_class=Response,
+)
+def reporte(
+    empresa_id: uuid.UUID,
+    desde: date | None = None,
+    hasta: date | None = None,
+    estado: str | None = None,
+    proveedor_id: uuid.UUID | None = None,
+    unidad_negocio_id: uuid.UUID | None = None,
+    incluir_sin_orden: bool = True,
+    usuario: Usuario = Depends(requiere("compras.orden.ver")),
+    db: Session = Depends(get_db),
+):
+    contenido = reporte_excel.excel(
+        db,
+        usuario,
+        empresa_id,
+        desde=desde,
+        hasta=hasta,
+        estado=estado,
+        proveedor_id=proveedor_id,
+        unidad_negocio_id=unidad_negocio_id,
+        incluir_sin_orden=incluir_sin_orden,
+    )
+    return Response(
+        contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="compras-{date.today()}.xlsx"'},
+    )
+
+
 # ---------------------------------------------------------------- órdenes
 
 
@@ -361,6 +401,17 @@ def cambiar(
 @router.get("/ordenes/{orden_id}/ruta", response_model=Ruta, summary="Quién aprobaría si se envía")
 def ruta(orden_id: uuid.UUID, usuario: Usuario = Depends(MODULO), db: Session = Depends(get_db)):
     return service.ruta(db, usuario, orden_id)
+
+
+@router.get(
+    "/ordenes/{orden_id}/asiento",
+    response_model=AsientoPrevio,
+    summary="Vista previa del asiento contable (no se contabiliza)",
+)
+def asiento_orden(
+    orden_id: uuid.UUID, usuario: Usuario = Depends(MODULO), db: Session = Depends(get_db)
+):
+    return asiento.vista_previa(db, service.ver(db, usuario, orden_id))
 
 
 @router.get("/ordenes/{orden_id}/pdf", summary="PDF de la orden", response_class=Response)

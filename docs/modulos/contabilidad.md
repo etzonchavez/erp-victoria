@@ -1,6 +1,6 @@
 # Contabilidad base
 
-**Versión:** 0.10.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos) · Asientos reales: Fase 1 (2027)
+**Versión:** 0.17.0 · **Estado:** disponible (plan de cuentas, perfiles, centros de costo, impuestos, reconocimiento del cargo) · Asientos reales: Fase 1 (2027)
 
 ## 1. Objetivo
 
@@ -20,6 +20,7 @@ Dar a cada empresa un **plan de cuentas**, **perfiles contables**, **centros de 
 | `contabilidad.perfil.ver` / `.editar` | Perfiles contables |
 | `contabilidad.centro_costo.ver` / `.editar` | Centros de costo |
 | `contabilidad.impuesto.ver` / `.editar` | Impuestos |
+| `contabilidad.cxp.ver` / `.editar` | Cuentas por pagar: cuándo se reconoce el cargo y la cuenta puente |
 
 El módulo **Contabilidad** se activa en *Configuración → Módulos*. Todas las pantallas trabajan sobre una empresa: si hay varias, se elige arriba en cada pantalla y el ERP la recuerda.
 
@@ -106,19 +107,43 @@ Cada línea de solicitud se reparte entre uno o varios centros de costo ([Solici
 
 Un impuesto con tasa mayor a cero necesita una cuenta imputable de pasivo o de activo (por ejemplo 1673 si la empresa registra el IGV por acreditar).
 
-## 4. Vista previa del asiento (orden de compra, Semana 5)
+### Reconocimiento del cargo (Cuentas por pagar)
 
-Ejemplo: orden de S/ 1,000 + IGV de suministros para almacén, centro de costo `ADM-01`.
+*Configuración → Cuentas por pagar → Reconocimiento del cargo*. Define, por empresa y **tipo de artículo**, cuándo se registra el gasto o la existencia de una compra:
+
+| Momento | Al recibir | Al facturar |
+| --- | --- | --- |
+| **Al recibir** | Debe gasto o compra (por centro de costo) · Haber **cuenta puente** (4211 Facturas no emitidas) | Debe cuenta puente + IGV · Haber cuenta por pagar del perfil (4212 Emitidas) |
+| **Al facturar** | Sin asiento | Debe gasto o compra (por centro de costo) + IGV · Haber cuenta por pagar del perfil (4212) |
+
+Valores por defecto (decisión de Et): **bienes inventariables, no inventariables y activos fijos al recibir; servicios al facturar**. Para los bienes inventariables se agrega el destino (Debe existencias · Haber variación) en el mismo momento en que se reconoce la compra.
+
+- La cuenta puente debe ser activa e imputable; es obligatoria si algún tipo se reconoce al recibir.
+- Las empresas que no tenían la 4211 la reciben automáticamente bajo la 421 la primera vez que se abre esta configuración.
+- Los asientos reales se generarán con los módulos de recepción y facturación; hoy se usa en la vista previa del asiento de la orden.
+
+## 4. Vista previa del asiento (orden de compra)
+
+En el detalle de la orden, sección **Asiento contable (vista previa)**. Muestra uno o dos asientos según el reconocimiento configurado. Ejemplo: orden de S/ 1,000 + IGV de suministros para almacén (al recibir), centro `ADM-01`:
+
+**Al recibir la mercadería o el servicio**
 
 | Cuenta | Centro de costo | Debe | Haber |
 | --- | --- | --- | --- |
 | 6032 Suministros | ADM-01 | 1,000.00 | |
-| 40111 IGV – Cuenta propia | | 180.00 | |
-| 4212 Facturas emitidas por pagar | | | 1,180.00 |
 | *Destino:* 2524 Otros suministros | | 1,000.00 | |
 | *Destino:* 6132 Variación de suministros | | | 1,000.00 |
+| 4211 No emitidas | | | 1,000.00 |
 
-Se muestra con la etiqueta **"Vista previa — no contabilizado"**. El asiento real se genera en 2027 con la factura del proveedor, usando la misma regla.
+**Al registrar la factura**
+
+| Cuenta | Centro de costo | Debe | Haber |
+| --- | --- | --- | --- |
+| 4211 No emitidas | | 1,000.00 | |
+| 40111 IGV – Cuenta propia | | 180.00 | |
+| 4212 Emitidas | | | 1,180.00 |
+
+No se contabiliza. Si falta una cuenta (perfil del artículo, cuenta del impuesto o cuenta puente) se muestra un aviso.
 
 ## 5. Reglas
 

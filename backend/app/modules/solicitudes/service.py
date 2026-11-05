@@ -23,7 +23,7 @@ from app.core.errors import ErrorERP, no_encontrado
 from app.modules.aprobaciones import service as aprobaciones
 from app.modules.contabilidad import service as contabilidad
 from app.modules.maestros import service as maestros
-from app.modules.seguridad import atributos
+from app.modules.seguridad import atributos, notificaciones
 from app.modules.seguridad.models import Usuario
 from app.modules.seguridad.service import auditar, permisos_de
 from app.modules.solicitudes.models import (
@@ -342,6 +342,8 @@ def _contexto_basico(sol: Solicitud) -> aprobaciones.Contexto:
         unidad_negocio_id=sol.unidad_negocio_id,
         solicitante_id=sol.solicitante_id,
         monto=sol.total_funcional,
+        referencia=f"solicitud {sol.numero} · {sol.titulo}",
+        enlace=f"solicitudes?id={sol.id}",
     )
 
 
@@ -428,6 +430,7 @@ def actuar(
         "rechazado": "rechazada",
         "devuelto": "devuelta",
     }[resultado]
+    _avisar_resultado(db, actor, sol, comentario)
     auditar(
         db,
         actor,
@@ -438,6 +441,29 @@ def actuar(
     )
     db.commit()
     return sol
+
+
+AVISOS = {
+    "aprobada": ("aprobado", "Tu solicitud {n} fue aprobada", "Ya está lista para Compras."),
+    "rechazada": ("rechazado", "Tu solicitud {n} fue rechazada", "{a}: {c}"),
+    "devuelta": ("devuelto", "Tu solicitud {n} fue devuelta", "{a} pide corregir: {c}"),
+}
+
+
+def _avisar_resultado(db: Session, actor: Usuario, sol: Solicitud, comentario: str | None) -> None:
+    if sol.estado not in AVISOS:
+        return
+    tipo, titulo, mensaje = AVISOS[sol.estado]
+    notificaciones.notificar(
+        db,
+        [sol.solicitante_id],
+        tipo,
+        titulo.format(n=sol.numero),
+        mensaje.format(a=actor.nombre, c=comentario or "sin comentario"),
+        f"solicitudes?id={sol.id}",
+        DOCUMENTO,
+        sol.id,
+    )
 
 
 def anular(

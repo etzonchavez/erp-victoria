@@ -135,3 +135,4 @@ class Paso(Base):
     actuado_por_nombre: Mapped[str | None] = mapped_column(String(150), nullable=True)
     actuado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     comentario: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    notificado: Mapped[bool] = mapped_column(Boolean, default=False)  # aviso "por aprobar"

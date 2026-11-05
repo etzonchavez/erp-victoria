@@ -2,6 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import {
   BadgeDollarSign,
   BookOpen,
+  CalendarClock,
+  FileBarChart,
   Building2,
   ClipboardList,
   FileSpreadsheet,
@@ -15,6 +17,7 @@ import {
   Palette,
   Percent,
   Puzzle,
+  Receipt,
   Ruler,
   ScrollText,
   Settings,
@@ -45,6 +48,8 @@ import PerfilesContables from "./paginas/PerfilesContables";
 import Personalizacion from "./paginas/Personalizacion";
 import PlanCuentas from "./paginas/PlanCuentas";
 import Proveedores from "./paginas/Proveedores";
+import ReconocimientoCargo from "./paginas/ReconocimientoCargo";
+import ReporteCompras from "./paginas/ReporteCompras";
 import ReglasAprobacion from "./paginas/ReglasAprobacion";
 import Roles from "./paginas/Roles";
 import Solicitudes from "./paginas/Solicitudes";
@@ -85,6 +90,7 @@ export const AREAS: { codigo: string; nombre: string; icono: LucideIcon }[] = [
   { codigo: "organizacion", nombre: "Organización", icono: Building2 },
   { codigo: "catalogos", nombre: "Catálogos", icono: FolderTree },
   { codigo: "contabilidad", nombre: "Contabilidad", icono: Landmark },
+  { codigo: "cxp", nombre: "Cuentas por pagar", icono: Receipt },
   { codigo: "documentos", nombre: "Aprobaciones y documentos", icono: ListChecks },
   { codigo: "seguridad", nombre: "Seguridad y sistema", icono: ShieldCheck },
 ];
@@ -111,6 +117,16 @@ export const PANTALLAS: Pantalla[] = [
     icono: ShoppingCart,
     tipo: "tarea",
     pagina: () => <OrdenesCompra />,
+  },
+  {
+    ruta: "reporte-compras",
+    nombre: "Reporte de compras",
+    descripcion: "Excel de solicitudes y órdenes con filtros",
+    modulo: "compras",
+    icono: FileBarChart,
+    tipo: "tarea",
+    permiso: "compras.orden.ver",
+    pagina: () => <ReporteCompras />,
   },
   {
     ruta: "articulos",
@@ -244,6 +260,18 @@ export const PANTALLAS: Pantalla[] = [
     area: "contabilidad",
     permiso: "contabilidad.impuesto.ver",
     pagina: () => <Impuestos />,
+  },
+  // ---------------------------------------------------------------- cuentas por pagar
+  {
+    ruta: "reconocimiento-cargo",
+    nombre: "Reconocimiento del cargo",
+    descripcion: "Al recibir o al facturar, por tipo de artículo",
+    modulo: "contabilidad",
+    icono: CalendarClock,
+    tipo: "configuracion",
+    area: "cxp",
+    permiso: "contabilidad.cxp.ver",
+    pagina: () => <ReconocimientoCargo />,
   },
   // ---------------------------------------------------------------- aprobaciones y documentos
   {

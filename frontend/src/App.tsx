@@ -1,6 +1,7 @@
-import { Bell, ChevronDown, LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AvisosProvider } from "./avisos";
+import { Campana } from "./campana";
 import { AREAS, ICONO_CONFIGURACION, ICONO_INICIO, MODULOS, moduloPrincipal, pantallasVisibles } from "./navegacion";
 import Configuracion from "./paginas/Configuracion";
 import Ingreso from "./paginas/Ingreso";
@@ -30,6 +31,7 @@ const guardarGrupos = (g: Record<string, boolean>) => {
 function Aplicacion() {
   const { sesion, cargando, salir, puede, marca } = useSesion();
   const [ruta, setRuta] = useState(rutaActual);
+  const [hash, setHash] = useState(window.location.hash);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [usuarioAbierto, setUsuarioAbierto] = useState(false);
   const [grupos, setGrupos] = useState(leerGrupos);
@@ -39,6 +41,7 @@ function Aplicacion() {
   useEffect(() => {
     const cambio = () => {
       setRuta(rutaActual());
+      setHash(window.location.hash);
       setMenuAbierto(false);
       setUsuarioAbierto(false);
       window.scrollTo(0, 0);
@@ -117,9 +120,7 @@ function Aplicacion() {
         </a>
         <span className="barra-titulo">{titulo}</span>
         <div className="barra-derecha">
-          <button className="boton-icono" disabled title="Notificaciones: llegan en el próximo release" aria-label="Notificaciones (próximamente)">
-            <Bell size={20} />
-          </button>
+          <Campana />
           <div className="menu-usuario">
             <button className="boton-usuario" onClick={() => setUsuarioAbierto(!usuarioAbierto)} aria-expanded={usuarioAbierto} aria-haspopup="menu">
               <span className="avatar" aria-hidden="true">
@@ -206,7 +207,9 @@ function Aplicacion() {
           </div>
         )}
       </nav>
-      <main className="contenido">{pagina}</main>
+      <main className="contenido" key={hash}>
+        {pagina}
+      </main>
     </div>
   );
 }

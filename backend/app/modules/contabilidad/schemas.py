@@ -176,3 +176,21 @@ class EstadoContableEmpresa(BaseModel):
 
 class ArticuloPerfilCambio(BaseModel):
     perfil_id: uuid.UUID | None  # null = usar el perfil de la categoría
+
+
+class MomentoTipo(BaseModel):
+    tipo_articulo: str
+    nombre: str
+    momento: str
+
+
+class ConfigCxPSalida(BaseModel):
+    momentos: list[MomentoTipo]
+    opciones: list[Opcion]  # recepcion / facturacion
+    cuenta_recepcion_id: uuid.UUID | None
+    cuenta_recepcion: str | None
+
+
+class ConfigCxPCambio(BaseModel):
+    momentos: dict[str, str] = {}
+    cuenta_recepcion_id: uuid.UUID | None = None

@@ -39,7 +39,7 @@ from app.modules.compras.models import (
 from app.modules.contabilidad import service as contabilidad
 from app.modules.contabilidad.models import Impuesto
 from app.modules.maestros import service as maestros
-from app.modules.seguridad import atributos
+from app.modules.seguridad import atributos, notificaciones
 from app.modules.seguridad.models import Usuario
 from app.modules.seguridad.service import auditar, permisos_de
 from app.modules.solicitudes import service as solicitudes
@@ -487,6 +487,8 @@ def _contexto_basico(orden: Orden) -> aprobaciones.Contexto:
         unidad_negocio_id=orden.unidad_negocio_id,
         solicitante_id=orden.comprador_id,
         monto=orden.total_funcional,
+        referencia=f"orden {orden.numero}",
+        enlace=f"ordenes-compra?id={orden.id}",
     )
 
 
@@ -579,6 +581,7 @@ def actuar(
     }[resultado]
     if orden.estado == "rechazada":
         _liberar_solicitudes(db, actor, orden, f"Orden {orden.numero} rechazada")
+    _avisar_resultado(db, actor, orden, comentario)
     auditar(
         db,
         actor,
@@ -591,11 +594,47 @@ def actuar(
     return orden
 
 
+AVISOS = {
+    "aprobada": ("aprobado", "Tu orden {n} fue aprobada", "Ya puedes enviarla al proveedor."),
+    "rechazada": ("rechazado", "Tu orden {n} fue rechazada", "{a}: {c}"),
+    "devuelta": ("devuelto", "Tu orden {n} fue devuelta", "{a} pide corregir: {c}"),
+}
+
+
+def _avisar_resultado(db: Session, actor: Usuario, orden: Orden, comentario: str | None) -> None:
+    if orden.estado not in AVISOS:
+        return
+    tipo, titulo, mensaje = AVISOS[orden.estado]
+    notificaciones.notificar(
+        db,
+        [orden.comprador_id],
+        tipo,
+        titulo.format(n=orden.numero),
+        mensaje.format(a=actor.nombre, c=comentario or "sin comentario"),
+        f"ordenes-compra?id={orden.id}",
+        DOCUMENTO,
+        orden.id,
+    )
+
+
 def marcar_enviada(db: Session, actor: Usuario, orden_id: uuid.UUID) -> Orden:
     orden = obtener(db, orden_id)
     if not acciones(db, actor, orden)["marcar_enviada"]:
         raise ErrorERP(409, "no_se_puede_enviar", "Solo una orden aprobada se envía al proveedor")
     orden.estado, orden.enviada_en, orden.enviada_por = "enviada", ahora_utc(), actor.id
+    prov = maestros.obtener_proveedor(db, orden.proveedor_id)
+    for sol_id in {ln.solicitud_id for ln in orden.lineas if ln.solicitud_id}:
+        sol = solicitudes.obtener(db, sol_id)
+        notificaciones.notificar(
+            db,
+            [sol.solicitante_id],
+            "enviada",
+            f"Tu solicitud {sol.numero} ya fue pedida",
+            f"Va en la orden {orden.numero}, enviada a {prov.razon_social}.",
+            f"solicitudes?id={sol.id}",
+            solicitudes.DOCUMENTO,
+            sol.id,
+        )
     auditar(db, actor, "enviar_proveedor", "orden_compra", orden.id, {"numero": orden.numero})
     db.commit()
     return orden

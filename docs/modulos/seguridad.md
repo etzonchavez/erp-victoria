@@ -1,6 +1,6 @@
 # Seguridad
 
-**Versión:** 0.16.0 · **Estado:** disponible
+**Versión:** 0.17.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -75,11 +75,26 @@ Permisos del módulo:
 
 ### Navegación: Inicio, menú y Configuración
 
-- **Barra superior fija:** ☰ abre el menú; luego el logo (lleva a Inicio), el nombre de la pantalla actual, la campana de notificaciones (próximo release) y el menú del usuario (*Cerrar sesión*).
+- **Barra superior fija:** ☰ abre el menú; luego el logo (lleva a Inicio), el nombre de la pantalla actual, la campana de notificaciones y el menú del usuario (*Cerrar sesión*).
 - **Menú lateral oculto:** se abre con ☰ encima de la pantalla y se cierra solo al elegir una opción, al tocar fuera o con Esc. Contiene **Inicio**, los módulos con sus tareas (un módulo con una sola tarea va directo; los demás se despliegan y recuerdan si los dejaste abiertos) y **Configuración** al final.
 - **Inicio:** primera pantalla al ingresar. Muestra los **pendientes por aprobar** (solicitudes y órdenes, con enlace a cada bandeja) y tarjetas por módulo con las tareas del día a día a las que el usuario tiene acceso.
 - **Configuración:** una sola entrada que agrupa por área (Organización, Catálogos, Contabilidad, Aprobaciones y documentos, Seguridad y sistema) lo que el usuario puede configurar.
 - Cada usuario ve solo lo que sus roles permiten y los módulos activos; si no tiene nada asignado, Inicio se lo indica.
+
+### Notificaciones (campana)
+
+La campana de la barra superior muestra un **contador de avisos sin leer** y, al abrirla, la lista de los últimos 30:
+
+| Aviso | Lo recibe | Cuándo |
+| --- | --- | --- |
+| Por aprobar | El aprobador de turno (o los usuarios del rol con acceso a la unidad) | Cuando le toca aprobar una solicitud u orden |
+| Aprobada / Rechazada / Devuelta | Quien registró la solicitud o emitió la orden | Cuando termina la aprobación o un aprobador rechaza o devuelve (con su comentario) |
+| Ya fue pedida | Quien registró la solicitud | Cuando la orden que la incluye se marca como enviada al proveedor |
+
+- Al hacer clic en un aviso se marca como leído y se abre el documento.
+- *Marcar todas como leídas* limpia el contador.
+- La campana se actualiza cada minuto, al cambiar de pantalla y al volver a la ventana.
+- El aviso por correo llegará más adelante.
 
 ### Confirmación de cada acción
 

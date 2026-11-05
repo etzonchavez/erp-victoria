@@ -435,3 +435,30 @@ input[type="file"] { padding: 8px; }
 .columnas-check { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
 @media (max-width: 900px) { .formato-oc { grid-template-columns: 1fr; } .vista-pdf { position: static; } }
 input[type="color"] { height: 42px; padding: 4px 6px; cursor: pointer; }
+
+/* ---------- campana de notificaciones ---------- */
+.campana { position: relative; }
+.campana .boton-icono { position: relative; }
+.campana-contador { position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #e5484d; color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; line-height: 1; }
+.campana-panel { position: absolute; right: -60px; top: calc(100% + 8px); width: min(400px, 92vw); max-height: 70vh; overflow-y: auto; background: var(--superficie); color: var(--texto); border: 1px solid var(--linea); border-radius: var(--radio); box-shadow: 0 16px 40px rgba(15, 23, 42, .2); z-index: 30; }
+.campana-panel header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--linea); position: sticky; top: 0; background: var(--superficie); }
+.campana-panel header button { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; color: #1f4fa3; font: inherit; font-size: 13px; cursor: pointer; }
+.campana-panel ul { list-style: none; margin: 0; padding: 4px; }
+.campana-vacia { padding: 16px 14px; margin: 0; }
+.aviso-item { display: flex; gap: 10px; width: 100%; text-align: left; background: none; border: 0; font: inherit; color: inherit; padding: 10px; border-radius: var(--radio); cursor: pointer; }
+.aviso-item:hover { background: #f3f5f8; }
+.aviso-item > span:last-child { display: grid; gap: 2px; }
+.aviso-item strong { font-weight: 500; font-size: 14px; }
+.aviso-item.no-leido strong { font-weight: 700; }
+.aviso-item span span { color: var(--texto-tenue); font-size: 13px; }
+.aviso-item small { color: var(--texto-tenue); font-size: 12px; }
+.aviso-punto { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; background: #b3bccb; }
+.aviso-por_aprobar { background: #1f4fa3; }
+.aviso-aprobado, .aviso-enviada { background: var(--sello); }
+.aviso-rechazado { background: var(--alerta); }
+.aviso-devuelto { background: #d97706; }
+.aviso-item:not(.no-leido) .aviso-punto { opacity: .35; }
+.asiento summary { cursor: pointer; list-style: revert; }
+.asiento summary h3 { display: inline; }
+.asiento caption { text-align: left; font-weight: 600; padding: 8px 0; }
+.asiento tfoot th { border-top: 2px solid var(--linea); }
