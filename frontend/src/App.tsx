@@ -1,124 +1,29 @@
-import { useEffect, useState, type ReactNode } from "react";
-import Articulos from "./paginas/Articulos";
-import Atributos from "./paginas/Atributos";
-import Auditoria from "./paginas/Auditoria";
-import CargaExcel from "./paginas/CargaExcel";
-import Categorias from "./paginas/Categorias";
-import CentrosCosto from "./paginas/CentrosCosto";
-import CondicionesPago from "./paginas/CondicionesPago";
-import Impuestos from "./paginas/Impuestos";
-import PerfilesContables from "./paginas/PerfilesContables";
-import PlanCuentas from "./paginas/PlanCuentas";
-import FormatoOrden from "./paginas/FormatoOrden";
-import OrdenesCompra from "./paginas/OrdenesCompra";
-import Proveedores from "./paginas/Proveedores";
-import ReglasAprobacion from "./paginas/ReglasAprobacion";
-import Solicitudes from "./paginas/Solicitudes";
-import Empresas from "./paginas/Empresas";
-import Monedas from "./paginas/Monedas";
-import Unidades from "./paginas/Unidades";
-import Ingreso from "./paginas/Ingreso";
-import Modulos from "./paginas/Modulos";
-import Personalizacion from "./paginas/Personalizacion";
-import Roles from "./paginas/Roles";
-import Usuarios from "./paginas/Usuarios";
+import { Bell, ChevronDown, LogOut, Menu, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AvisosProvider } from "./avisos";
+import { AREAS, ICONO_CONFIGURACION, ICONO_INICIO, MODULOS, moduloPrincipal, pantallasVisibles } from "./navegacion";
+import Configuracion from "./paginas/Configuracion";
+import Ingreso from "./paginas/Ingreso";
+import Inicio from "./paginas/Inicio";
 import { SesionProvider, useSesion } from "./sesion";
 
-// permiso: uno, o varios (basta con tener alguno); sin permiso = todo usuario del módulo
-type Ruta = { ruta: string; nombre: string; permiso?: string | string[]; pagina: () => ReactNode };
+// Las pantallas se registran en navegacion.tsx; aquí solo está el marco (barra superior y menú).
 
-/**
- * Cada módulo agrega aquí sus pantallas. El menú muestra solo las que el usuario puede ver.
- * - grupo "negocio": módulos de operación (Solicitudes, Compras…); van arriba, siempre visibles.
- * - grupo "administracion": configuración del ERP; van plegadas en "Administración" al pie del menú.
- */
-const MENU: { modulo: string; grupo: "negocio" | "administracion"; rutas: Ruta[] }[] = [
-  {
-    modulo: "solicitudes",
-    grupo: "negocio",
-    rutas: [
-      // Sin permiso: cualquiera puede ser aprobador; la pantalla muestra lo que le corresponde
-      { ruta: "solicitudes", nombre: "Solicitudes de compra", pagina: () => <Solicitudes /> },
-      { ruta: "reglas-aprobacion", nombre: "Reglas de aprobación", permiso: ["solicitudes.regla.ver", "compras.regla.ver"], pagina: () => <ReglasAprobacion /> },
-    ],
-  },
-  {
-    modulo: "compras",
-    grupo: "negocio",
-    rutas: [
-      { ruta: "ordenes-compra", nombre: "Órdenes de compra", pagina: () => <OrdenesCompra /> },
-      { ruta: "formato-oc", nombre: "Formato de la orden", permiso: "compras.formato.editar", pagina: () => <FormatoOrden /> },
-    ],
-  },
-  {
-    modulo: "maestros",
-    grupo: "negocio",
-    rutas: [
-      { ruta: "empresas", nombre: "Empresas", permiso: "maestros.empresa.ver", pagina: () => <Empresas /> },
-      { ruta: "monedas", nombre: "Monedas y tipo de cambio", permiso: "maestros.moneda.ver", pagina: () => <Monedas /> },
-      { ruta: "unidades", nombre: "Unidades de medida", permiso: "maestros.unidad.ver", pagina: () => <Unidades /> },
-      { ruta: "articulos", nombre: "Artículos", permiso: "maestros.articulo.ver", pagina: () => <Articulos /> },
-      { ruta: "proveedores", nombre: "Proveedores", permiso: "maestros.proveedor.ver", pagina: () => <Proveedores /> },
-      { ruta: "categorias", nombre: "Categorías de artículo", permiso: "maestros.categoria.ver", pagina: () => <Categorias /> },
-      { ruta: "condiciones-pago", nombre: "Condiciones de pago", permiso: "maestros.proveedor.ver", pagina: () => <CondicionesPago /> },
-      {
-        ruta: "carga-excel",
-        nombre: "Carga desde Excel",
-        permiso: ["maestros.categoria.editar", "maestros.articulo.crear", "maestros.proveedor.crear", "contabilidad.cuenta.editar"],
-        pagina: () => <CargaExcel />,
-      },
-    ],
-  },
-  {
-    modulo: "contabilidad",
-    grupo: "negocio",
-    rutas: [
-      { ruta: "plan-cuentas", nombre: "Plan de cuentas", permiso: "contabilidad.cuenta.ver", pagina: () => <PlanCuentas /> },
-      { ruta: "perfiles", nombre: "Perfiles contables", permiso: "contabilidad.perfil.ver", pagina: () => <PerfilesContables /> },
-      { ruta: "centros-costo", nombre: "Centros de costo", permiso: "contabilidad.centro_costo.ver", pagina: () => <CentrosCosto /> },
-      { ruta: "impuestos", nombre: "Impuestos", permiso: "contabilidad.impuesto.ver", pagina: () => <Impuestos /> },
-    ],
-  },
-  {
-    modulo: "seguridad",
-    grupo: "administracion",
-    rutas: [
-      { ruta: "usuarios", nombre: "Usuarios", permiso: "seguridad.usuario.ver", pagina: () => <Usuarios /> },
-      { ruta: "roles", nombre: "Roles", permiso: "seguridad.rol.ver", pagina: () => <Roles /> },
-      { ruta: "modulos", nombre: "Módulos", permiso: "seguridad.modulo.ver", pagina: () => <Modulos /> },
-      {
-        ruta: "personalizacion",
-        nombre: "Personalización",
-        permiso: "seguridad.personalizacion.editar",
-        pagina: () => <Personalizacion />,
-      },
-      {
-        ruta: "atributos",
-        nombre: "Atributos adicionales",
-        permiso: "seguridad.atributo.editar",
-        pagina: () => <Atributos />,
-      },
-      { ruta: "auditoria", nombre: "Auditoría", permiso: "seguridad.auditoria.ver", pagina: () => <Auditoria /> },
-    ],
-  },
-];
+const rutaActual = () => window.location.hash.replace(/^#\/?/, "").split("?")[0];
 
-const rutaActual = () => window.location.hash.replace(/^#\/?/, "");
-
-const CLAVE_ADMIN = "victoria.menu.administracion";
-const leerAdminAbierto = () => {
+const CLAVE_GRUPOS = "victoria.menu.grupos";
+const leerGrupos = (): Record<string, boolean> => {
   try {
-    return localStorage.getItem(CLAVE_ADMIN) === "1";
+    return JSON.parse(localStorage.getItem(CLAVE_GRUPOS) ?? "{}");
   } catch {
-    return false;
+    return {};
   }
 };
-const guardarAdminAbierto = (abierto: boolean) => {
+const guardarGrupos = (g: Record<string, boolean>) => {
   try {
-    localStorage.setItem(CLAVE_ADMIN, abierto ? "1" : "0");
+    localStorage.setItem(CLAVE_GRUPOS, JSON.stringify(g));
   } catch {
-    /* sin almacenamiento: el grupo vuelve a plegarse al recargar */
+    /* sin almacenamiento: los grupos vuelven a su estado inicial al recargar */
   }
 };
 
@@ -126,45 +31,55 @@ function Aplicacion() {
   const { sesion, cargando, salir, puede, marca } = useSesion();
   const [ruta, setRuta] = useState(rutaActual);
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const [adminAbierto, setAdminAbierto] = useState(leerAdminAbierto);
+  const [usuarioAbierto, setUsuarioAbierto] = useState(false);
+  const [grupos, setGrupos] = useState(leerGrupos);
+  const botonMenu = useRef<HTMLButtonElement>(null);
 
+  const cerrarMenu = useCallback(() => setMenuAbierto(false), []);
   useEffect(() => {
     const cambio = () => {
       setRuta(rutaActual());
       setMenuAbierto(false);
+      setUsuarioAbierto(false);
+      window.scrollTo(0, 0);
     };
     window.addEventListener("hashchange", cambio);
     return () => window.removeEventListener("hashchange", cambio);
   }, []);
-
-  // Al entrar a una pantalla de administración el grupo se abre para mostrar dónde estás.
-  const rutaEsAdmin = MENU.some((m) => m.grupo === "administracion" && m.rutas.some((r) => r.ruta === ruta));
   useEffect(() => {
-    if (rutaEsAdmin) setAdminAbierto(true);
-  }, [ruta, rutaEsAdmin]);
+    if (!menuAbierto && !usuarioAbierto) return;
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (menuAbierto) botonMenu.current?.focus();
+      setMenuAbierto(false);
+      setUsuarioAbierto(false);
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [menuAbierto, usuarioAbierto]);
 
   if (cargando) return <div className="cargando">Cargando…</div>;
   if (!sesion) return <Ingreso />;
 
   const activos = new Set(sesion.modulos.map((m) => m.codigo));
-  const secciones = MENU.filter((s) => activos.has(s.modulo))
-    .map((s) => ({
-      ...s,
-      nombre: sesion.modulos.find((m) => m.codigo === s.modulo)?.nombre ?? s.modulo,
-      rutas: s.rutas.filter((r) => (!r.permiso ? true : Array.isArray(r.permiso) ? r.permiso.some(puede) : puede(r.permiso))),
-    }))
-    .filter((s) => s.rutas.length > 0);
-  const negocio = secciones.filter((s) => s.grupo === "negocio");
-  const administracion = secciones.filter((s) => s.grupo === "administracion").flatMap((s) => s.rutas);
-  // La pantalla de inicio es la primera de negocio; si aún no hay, la primera de administración.
-  const disponibles = [...negocio.flatMap((s) => s.rutas), ...administracion];
-  const actual = disponibles.find((r) => r.ruta === ruta) ?? disponibles[0];
-  const enAdministracion = administracion.some((r) => r.ruta === actual?.ruta);
-  const verAdministracion = adminAbierto;
-  const alternarAdmin = () => {
-    const nuevo = !adminAbierto;
-    setAdminAbierto(nuevo);
-    guardarAdminAbierto(nuevo);
+  const visibles = pantallasVisibles(activos, puede);
+  const tareas = visibles.filter((p) => p.tipo === "tarea");
+  const configuracion = visibles.filter((p) => p.tipo === "configuracion");
+  const actual = visibles.find((p) => p.ruta === ruta);
+  const enConfiguracion = ruta === "configuracion" || actual?.tipo === "configuracion";
+  const titulo = actual?.nombre ?? (ruta === "configuracion" ? "Configuración" : "Inicio");
+
+  const modulosMenu = MODULOS.map((m) => ({
+    ...m,
+    nombre: sesion.modulos.find((x) => x.codigo === m.codigo)?.nombre ?? m.codigo,
+    tareas: tareas.filter((t) => moduloPrincipal(t) === m.codigo),
+  })).filter((m) => m.tareas.length > 0);
+  // Un grupo está abierto si el usuario lo abrió, o si contiene la pantalla actual
+  const abierto = (clave: string, contieneActual: boolean) => grupos[clave] ?? contieneActual;
+  const alternar = (clave: string, contieneActual: boolean) => {
+    const nuevo = { ...grupos, [clave]: !abierto(clave, contieneActual) };
+    setGrupos(nuevo);
+    guardarGrupos(nuevo);
   };
   const iniciales = sesion.usuario.nombre
     .split(" ")
@@ -172,111 +87,126 @@ function Aplicacion() {
     .map((p) => p[0])
     .join("")
     .toUpperCase();
-  const otrosActivos = sesion.modulos.filter((m) => !MENU.some((s) => s.modulo === m.codigo));
+
+  let pagina;
+  if (actual) pagina = actual.pagina();
+  else if (ruta === "configuracion") pagina = <Configuracion pantallas={configuracion} />;
+  else pagina = <Inicio tareas={tareas} hayConfiguracion={configuracion.length > 0} />;
 
   return (
     <div className="marco">
-      <header className="barra-movil">
-        <button className="boton-icono" onClick={() => setMenuAbierto(!menuAbierto)} aria-expanded={menuAbierto}>
-          ☰
+      <header className="barra-superior">
+        <button
+          ref={botonMenu}
+          className="boton-icono"
+          onClick={() => setMenuAbierto(!menuAbierto)}
+          aria-expanded={menuAbierto}
+          aria-controls="menu-principal"
+          aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
+        >
+          {menuAbierto ? <X size={20} /> : <Menu size={20} />}
         </button>
-        {marca.logo_url ? (
-          <img className="marca-logo-movil" src={marca.logo_url} alt={marca.nombre_empresa ?? "Logo de la empresa"} />
-        ) : (
-          <span className="marca">Victoria ERP</span>
-        )}
-      </header>
-      <nav className={menuAbierto ? "riel abierto" : "riel"} aria-label="Menú principal">
-        <div className="riel-marca">
-          {marca.logo_url && (
-            <span className="riel-logo">
-              <img src={marca.logo_url} alt={marca.nombre_empresa ?? "Logo de la empresa"} />
+        <a href="#/inicio" className="barra-marca" aria-label="Ir a Inicio">
+          {marca.logo_url ? (
+            <img src={marca.logo_url} alt={marca.nombre_empresa ?? "Logo de la empresa"} />
+          ) : (
+            <span className="marca">
+              Victoria <span>ERP</span>
             </span>
           )}
-          {marca.nombre_empresa && <p className="riel-empresa">{marca.nombre_empresa}</p>}
-          <p className="marca">
-            Victoria <span>ERP</span>
-          </p>
-        </div>
-        <div className="riel-negocio">
-        {negocio.map((s) => (
-          <div key={s.modulo} className="riel-grupo">
-            <p className="riel-modulo">{s.nombre}</p>
-            {s.rutas.map((r) => (
-              <a key={r.ruta} href={`#/${r.ruta}`} aria-current={actual?.ruta === r.ruta ? "page" : undefined}>
-                {r.nombre}
-              </a>
-            ))}
-          </div>
-        ))}
-        {otrosActivos.length > 0 && (
-          <div className="riel-grupo">
-            <p className="riel-modulo">Próximamente</p>
-            {otrosActivos.map((m) => (
-              <span key={m.codigo} className="riel-pendiente">
-                {m.nombre}
+        </a>
+        <span className="barra-titulo">{titulo}</span>
+        <div className="barra-derecha">
+          <button className="boton-icono" disabled title="Notificaciones: llegan en el próximo release" aria-label="Notificaciones (próximamente)">
+            <Bell size={20} />
+          </button>
+          <div className="menu-usuario">
+            <button className="boton-usuario" onClick={() => setUsuarioAbierto(!usuarioAbierto)} aria-expanded={usuarioAbierto} aria-haspopup="menu">
+              <span className="avatar" aria-hidden="true">
+                {iniciales}
               </span>
-            ))}
-          </div>
-        )}
-        {negocio.length === 0 && otrosActivos.length === 0 && (
-          <p className="riel-ayuda">
-            Aún no hay módulos de negocio activos.
-            {puede("seguridad.modulo.ver") && (
-              <>
-                {" "}
-                <a href="#/modulos">Activar módulos</a>
-              </>
-            )}
-          </p>
-        )}
-        </div>
-        {administracion.length > 0 && (
-          <div className="riel-admin">
-            <button
-              type="button"
-              className={enAdministracion && !verAdministracion ? "riel-admin-boton activo" : "riel-admin-boton"}
-              aria-expanded={verAdministracion}
-              aria-controls="menu-administracion"
-              onClick={alternarAdmin}
-            >
-              <span aria-hidden="true">⚙</span> Administración
-              <span className="riel-admin-flecha" aria-hidden="true">
-                ▸
-              </span>
+              <span className="boton-usuario-nombre">{sesion.usuario.nombre}</span>
+              <ChevronDown size={16} aria-hidden="true" />
             </button>
-            {verAdministracion && (
-              <div id="menu-administracion" className="riel-grupo riel-admin-lista">
-                {administracion.map((r) => (
-                  <a key={r.ruta} href={`#/${r.ruta}`} aria-current={actual?.ruta === r.ruta ? "page" : undefined}>
-                    {r.nombre}
-                  </a>
-                ))}
+            {usuarioAbierto && (
+              <div className="menu-usuario-lista" role="menu">
+                <p>
+                  <strong>{sesion.usuario.nombre}</strong>
+                  <span>{sesion.usuario.email}</span>
+                </p>
+                <button role="menuitem" onClick={salir}>
+                  <LogOut size={16} aria-hidden="true" /> Cerrar sesión
+                </button>
               </div>
             )}
           </div>
-        )}
-        <div className="riel-usuario">
-          <span className="avatar" aria-hidden="true">
-            {iniciales}
-          </span>
-          <div>
-            <p>{sesion.usuario.nombre}</p>
-            <button className="enlace" onClick={salir}>
-              Cerrar sesión
-            </button>
-          </div>
         </div>
-      </nav>
-      <main className="contenido">
-        {actual ? (
-          actual.pagina()
-        ) : (
-          <div className="vacio">
-            <p>Tu usuario aún no tiene roles asignados. Pide a un administrador que te asigne uno.</p>
+      </header>
+
+      {menuAbierto && <div className="velo" onClick={cerrarMenu} aria-hidden="true" />}
+      <nav id="menu-principal" className={menuAbierto ? "riel abierto" : "riel"} aria-label="Menú principal" hidden={!menuAbierto}>
+        {marca.nombre_empresa && <p className="riel-empresa">{marca.nombre_empresa}</p>}
+        <a href="#/inicio" className="riel-enlace" aria-current={!actual && ruta !== "configuracion" ? "page" : undefined}>
+          <ICONO_INICIO size={18} aria-hidden="true" /> Inicio
+        </a>
+        {modulosMenu.map((m) => {
+          // Un módulo con una sola tarea va directo, sin grupo que desplegar
+          if (m.tareas.length === 1) {
+            const t = m.tareas[0];
+            return (
+              <a key={m.codigo} href={`#/${t.ruta}`} className="riel-enlace" aria-current={actual?.ruta === t.ruta ? "page" : undefined}>
+                <m.icono size={18} aria-hidden="true" /> {t.nombre}
+              </a>
+            );
+          }
+          const contiene = m.tareas.some((t) => t.ruta === actual?.ruta);
+          const verGrupo = abierto(m.codigo, contiene);
+          return (
+            <div key={m.codigo} className="riel-grupo">
+              <button className="riel-modulo" aria-expanded={verGrupo} onClick={() => alternar(m.codigo, contiene)}>
+                <m.icono size={18} aria-hidden="true" /> {m.nombre}
+                <ChevronDown size={16} className="flecha" aria-hidden="true" />
+              </button>
+              {verGrupo &&
+                m.tareas.map((t) => (
+                  <a key={t.ruta} href={`#/${t.ruta}`} className="riel-sub" aria-current={actual?.ruta === t.ruta ? "page" : undefined}>
+                    {t.nombre}
+                  </a>
+                ))}
+            </div>
+          );
+        })}
+        {configuracion.length > 0 && (
+          <div className="riel-grupo riel-config">
+            <button className="riel-modulo" aria-expanded={abierto("configuracion", enConfiguracion)} onClick={() => alternar("configuracion", enConfiguracion)}>
+              <ICONO_CONFIGURACION size={18} aria-hidden="true" /> Configuración
+              <ChevronDown size={16} className="flecha" aria-hidden="true" />
+            </button>
+            {abierto("configuracion", enConfiguracion) && (
+              <>
+                <a href="#/configuracion" className="riel-sub" aria-current={ruta === "configuracion" ? "page" : undefined}>
+                  Ver todo
+                </a>
+                {AREAS.map((a) => {
+                  const del = configuracion.filter((p) => p.area === a.codigo);
+                  if (del.length === 0) return null;
+                  return (
+                    <div key={a.codigo}>
+                      <p className="riel-area">{a.nombre}</p>
+                      {del.map((p) => (
+                        <a key={p.ruta} href={`#/${p.ruta}`} className="riel-sub" aria-current={actual?.ruta === p.ruta ? "page" : undefined}>
+                          {p.nombre}
+                        </a>
+                      ))}
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         )}
-      </main>
+      </nav>
+      <main className="contenido">{pagina}</main>
     </div>
   );
 }

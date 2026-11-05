@@ -21,7 +21,7 @@ Dar a cada empresa un **plan de cuentas**, **perfiles contables**, **centros de 
 | `contabilidad.centro_costo.ver` / `.editar` | Centros de costo |
 | `contabilidad.impuesto.ver` / `.editar` | Impuestos |
 
-El módulo **Contabilidad** se activa en *Administración → Módulos*. Todas las pantallas trabajan sobre una empresa: si hay varias, se elige arriba en cada pantalla y el ERP la recuerda.
+El módulo **Contabilidad** se activa en *Configuración → Módulos*. Todas las pantallas trabajan sobre una empresa: si hay varias, se elige arriba en cada pantalla y el ERP la recuerda.
 
 ## Puesta en marcha
 

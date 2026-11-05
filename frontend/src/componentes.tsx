@@ -183,3 +183,6 @@ export const fechaDia = (iso: string) => {
 /** Monto con separador de miles y 2 decimales: 12,345.60 */
 export const monto = (valor: string | number, moneda?: string) =>
   `${moneda ? moneda + " " : ""}${new Intl.NumberFormat("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(valor))}`;
+
+/** Parámetro de la ruta actual: #/solicitudes?vista=por_aprobar → parametroRuta("vista") */
+export const parametroRuta = (nombre: string) => new URLSearchParams(window.location.hash.split("?")[1] ?? "").get(nombre);

@@ -1,6 +1,6 @@
 # Seguridad
 
-**Versión:** 0.11.0 · **Estado:** disponible
+**Versión:** 0.16.0 · **Estado:** disponible
 
 ## 1. Objetivo del módulo
 
@@ -73,11 +73,13 @@ Permisos del módulo:
 4. El administrador **crea los usuarios** y les asigna uno o más roles.
 5. Cada usuario **ingresa** con su correo y contraseña y solo ve en el menú las pantallas que sus permisos permiten.
 
-### Organización del menú
+### Navegación: Inicio, menú y Configuración
 
-- **Arriba:** los módulos de negocio (Solicitudes, Compras, Inventarios…). Es lo que el usuario usa a diario.
-- **Al pie, plegado:** el grupo **⚙ Administración**, con Usuarios, Roles, Módulos, Personalización y Auditoría. Se abre con un clic, recuerda si lo dejaste abierto y se abre solo cuando entras a una de sus pantallas.
-- Un usuario sin permisos de administración no ve el grupo.
+- **Barra superior fija:** ☰ abre el menú; luego el logo (lleva a Inicio), el nombre de la pantalla actual, la campana de notificaciones (próximo release) y el menú del usuario (*Cerrar sesión*).
+- **Menú lateral oculto:** se abre con ☰ encima de la pantalla y se cierra solo al elegir una opción, al tocar fuera o con Esc. Contiene **Inicio**, los módulos con sus tareas (un módulo con una sola tarea va directo; los demás se despliegan y recuerdan si los dejaste abiertos) y **Configuración** al final.
+- **Inicio:** primera pantalla al ingresar. Muestra los **pendientes por aprobar** (solicitudes y órdenes, con enlace a cada bandeja) y tarjetas por módulo con las tareas del día a día a las que el usuario tiene acceso.
+- **Configuración:** una sola entrada que agrupa por área (Organización, Catálogos, Contabilidad, Aprobaciones y documentos, Seguridad y sistema) lo que el usuario puede configurar.
+- Cada usuario ve solo lo que sus roles permiten y los módulos activos; si no tiene nada asignado, Inicio se lo indica.
 
 ### Confirmación de cada acción
 
@@ -137,7 +139,7 @@ El logo y el nombre aparecen en la pantalla de ingreso (antes de iniciar sesión
 
 ### Acceso por empresa y unidad de negocio
 
-En la ficha de cada usuario (*Administración → Usuarios*) se marcan las **empresas** a las que tiene acceso y, en cada una, **todas sus unidades de negocio** (incluidas las que se creen después) o solo algunas.
+En la ficha de cada usuario (*Configuración → Usuarios*) se marcan las **empresas** a las que tiene acceso y, en cada una, **todas sus unidades de negocio** (incluidas las que se creen después) o solo algunas.
 
 - Un usuario **sin empresas asignadas no ve ninguna**: la lista de usuarios lo marca con *Sin empresas*.
 - El **administrador** ve todas las empresas, sin asignación.
@@ -147,7 +149,7 @@ En la ficha de cada usuario (*Administración → Usuarios*) se marcan las **emp
 
 ### Atributos adicionales
 
-*Administración → Atributos adicionales* ([ADR-005](../adr/0005-atributos-adicionales.md)). Para cada documento operativo (solicitud de compra, orden de compra) y cada nivel (cabecera, línea, distribución) hay 10 atributos de texto, 10 numéricos y 10 de fecha, todos inactivos al inicio. La configuración es una sola para todo el grupo de empresas.
+*Configuración → Atributos adicionales* ([ADR-005](../adr/0005-atributos-adicionales.md)). Para cada documento operativo (solicitud de compra, orden de compra) y cada nivel (cabecera, línea, distribución) hay 10 atributos de texto, 10 numéricos y 10 de fecha, todos inactivos al inicio. La configuración es una sola para todo el grupo de empresas.
 
 | Campo | Regla |
 | --- | --- |

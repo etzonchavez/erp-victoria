@@ -39,7 +39,7 @@ Reglas:
 
 ## Consecuencias
 
-- Un cliente se adapta sin desarrollo: activa y nombra atributos en *Administración → Atributos adicionales*.
+- Un cliente se adapta sin desarrollo: activa y nombra atributos en *Configuración → Atributos adicionales*.
 - Costo: 30 columnas por tabla de documento (vacías no ocupan espacio en PostgreSQL).
 - El límite de 10 por tipo y nivel es fijo; ampliarlo exige una migración.
 - No hay atributos obligatorios en esta versión (decisión de Et); se puede agregar después sin cambiar el modelo.

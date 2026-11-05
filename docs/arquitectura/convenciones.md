@@ -30,7 +30,7 @@ Prefijos de tablas: `seg` seguridad, `mae` maestros, `sol` solicitudes, `cmp` co
 
 ## Pantallas (frontend)
 
-- **Menú:** cada módulo se registra en `MENU` de `frontend/src/App.tsx` con `grupo: "negocio"` (módulos de operación, arriba) o `grupo: "administracion"` (configuración, plegado al pie).
+- **Pantallas y menú:** cada pantalla se registra una sola vez en `PANTALLAS` de `frontend/src/navegacion.tsx` con su ruta, nombre, descripción corta, módulo, ícono ([Lucide](https://lucide.dev)), permiso y `tipo`: `"tarea"` (aparece en Inicio, agrupada por módulo) o `"configuracion"` (aparece en Configuración, en un `area`). El menú lateral, Inicio y Configuración se arman solos con lo que el usuario puede ver. Un módulo nuevo agrega además su ícono en `MODULOS`.
 - **Botones que guardan:** usar `BotonAccion` de `componentes.tsx` con `ocupado` mientras se ejecuta; nunca un `<button disabled>` para indicar que algo está en proceso.
 - **Confirmación:** tras toda acción exitosa llamar `avisar("…")` de `useAvisos()`; en formularios que no se cierran, además `useConfirmacion()` para mostrar *✓ Guardado* en el botón.
 - **Gris = no permitido:** el estado deshabilitado se reserva para acciones sin permiso o no aplicables.

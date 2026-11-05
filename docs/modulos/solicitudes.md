@@ -19,7 +19,7 @@ Que cualquier área pida lo que necesita comprar, con el artículo, la cantidad,
 
 Roles estándar: `ERP_SOL_ADMINISTRADOR`, `ERP_SOL_CONFIGURADOR` (reglas), `ERP_SOL_SOLICITANTE` y `ERP_SOL_CONSULTA`.
 
-El módulo se activa en *Administración → Módulos*. El usuario solo ve y registra solicitudes en las empresas y unidades de negocio que tiene asignadas.
+El módulo se activa en *Configuración → Módulos*. El usuario solo ve y registra solicitudes en las empresas y unidades de negocio que tiene asignadas.
 
 ## 3. Flujo del proceso
 
@@ -81,7 +81,7 @@ Por empresa, con una pestaña para solicitudes y otra para órdenes de compra. L
 
 ### Datos que usan las reglas
 
-- **Jefe inmediato:** en *Administración → Usuarios*.
+- **Jefe inmediato:** en *Configuración → Usuarios*.
 - **Responsable del centro de costo:** en *Contabilidad → Centros de costo*, ahora es un usuario del ERP.
 
 ## 5. Reglas de negocio y validaciones

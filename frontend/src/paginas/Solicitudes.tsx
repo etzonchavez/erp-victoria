@@ -11,7 +11,7 @@ import {
 } from "../api";
 import { CamposAtributos, useAtributos, valoresIniciales, type ValoresAtributos } from "../atributos";
 import { useAvisos } from "../avisos";
-import { BotonAccion, Encabezado, MensajeError, Panel, fecha, fechaDia, monto } from "../componentes";
+import { BotonAccion, Encabezado, MensajeError, Panel, parametroRuta, fecha, fechaDia, monto } from "../componentes";
 import { SelectorEmpresa, SinEmpresa, useEmpresaActiva, type EmpresaResumen } from "../empresa";
 import { useSesion } from "../sesion";
 
@@ -54,7 +54,7 @@ export default function Solicitudes() {
   const crear = puede("solicitudes.solicitud.crear");
   const verTodas = puede("solicitudes.solicitud.ver");
   const { empresas, empresa, elegir, cargando } = useEmpresaActiva();
-  const [alcance, setAlcance] = useState<Alcance>(crear ? "mias" : "por_aprobar");
+  const [alcance, setAlcance] = useState<Alcance>(() => (parametroRuta("vista") === "por_aprobar" || !crear ? "por_aprobar" : "mias"));
   const [estado, setEstado] = useState("");
   const [lista, setLista] = useState<SolicitudResumen[]>([]);
   const [porAprobar, setPorAprobar] = useState<SolicitudResumen[]>([]);
