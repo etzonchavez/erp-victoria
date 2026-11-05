@@ -1,0 +1,1686 @@
+
+<!doctype html>
+<html lang="es" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentación general, de arquitectura y funcional de Victoria ERP">
+      
+      
+      
+      
+        <link rel="prev" href="../contabilidad/">
+      
+      
+        <link rel="next" href="../compras/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Solicitudes de compra - Victoria ERP — Documentación</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#solicitudes-de-compra" class="md-skip">
+          Saltar a contenido
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabecera">
+    <a href="../.." title="Victoria ERP — Documentación" class="md-header__button md-logo" aria-label="Victoria ERP — Documentación" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Victoria ERP — Documentación
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Solicitudes de compra
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo oscuro"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Modo oscuro" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Modo claro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Búsqueda" placeholder="Búsqueda" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Buscar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpiar" aria-label="Limpiar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando búsqueda
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navegación" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Victoria ERP — Documentación" class="md-nav__button md-logo" aria-label="Victoria ERP — Documentación" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Victoria ERP — Documentación
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inicio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    General
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    General
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Qué es Victoria ERP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general/glosario/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glosario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitectura
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arquitectura
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitectura/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visión general
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../arquitectura/convenciones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convenciones
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisiones (ADR)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisiones (ADR)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0001-stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 Stack tecnológico
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0002-arquitectura/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002 Arquitectura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0003-infraestructura/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003 Infraestructura a costo cero
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0004-base-contable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004 Base contable configurable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0005-atributos-adicionales/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005 Atributos adicionales
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0006-motor-de-aprobacion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006 Motor de aprobación
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0007-pdf-orden-de-compra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007 PDF de la orden de compra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Módulos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Módulos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../seguridad/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seguridad
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maestros/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maestros
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contabilidad/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contabilidad base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solicitudes de compra
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solicitudes de compra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Tabla de contenidos">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Tabla de contenidos
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-del-modulo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo del módulo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-roles-y-permisos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Roles y permisos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-flujo-del-proceso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Flujo del proceso
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-pantallas-y-campos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Pantallas y campos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Pantallas y campos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solicitudes-de-compra_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solicitudes de compra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reglas-de-aprobacion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reglas de aprobación
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datos-que-usan-las-reglas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datos que usan las reglas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-reglas-de-negocio-y-validaciones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Reglas de negocio y validaciones
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-reportes-disponibles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Reportes disponibles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-configuracion-por-pais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Configuración por país
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-preguntas-frecuentes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Preguntas frecuentes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#referencia-tecnica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Referencia técnica
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compras/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Órdenes de compra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Países
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Países
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../paises/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../paises/peru/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perú
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Tabla de contenidos">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Tabla de contenidos
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-del-modulo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo del módulo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-roles-y-permisos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Roles y permisos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-flujo-del-proceso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Flujo del proceso
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-pantallas-y-campos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Pantallas y campos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Pantallas y campos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solicitudes-de-compra_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solicitudes de compra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reglas-de-aprobacion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reglas de aprobación
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datos-que-usan-las-reglas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datos que usan las reglas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-reglas-de-negocio-y-validaciones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Reglas de negocio y validaciones
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-reportes-disponibles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Reportes disponibles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-configuracion-por-pais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Configuración por país
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-preguntas-frecuentes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Preguntas frecuentes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#referencia-tecnica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Referencia técnica
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="solicitudes-de-compra">Solicitudes de compra<a class="headerlink" href="#solicitudes-de-compra" title="Permanent link">&para;</a></h1>
+<p><strong>Versión:</strong> 0.15.0 · <strong>Estado:</strong> disponible</p>
+<h2 id="1-objetivo-del-modulo">1. Objetivo del módulo<a class="headerlink" href="#1-objetivo-del-modulo" title="Permanent link">&para;</a></h2>
+<p>Que cualquier área pida lo que necesita comprar, con el artículo, la cantidad, el precio estimado y el centro de costo, y que la solicitud pase por las aprobaciones que el cliente configura antes de llegar a Compras.</p>
+<h2 id="2-roles-y-permisos">2. Roles y permisos<a class="headerlink" href="#2-roles-y-permisos" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Permiso</th>
+<th>Permite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>solicitudes.solicitud.crear</code></td>
+<td>Registrar, editar y enviar solicitudes propias</td>
+</tr>
+<tr>
+<td><code>solicitudes.solicitud.ver</code></td>
+<td>Ver todas las solicitudes de las empresas y unidades a las que tiene acceso</td>
+</tr>
+<tr>
+<td><code>solicitudes.solicitud.anular</code></td>
+<td>Anular solicitudes aprobadas sin orden de compra</td>
+</tr>
+<tr>
+<td><code>solicitudes.regla.ver</code> / <code>.editar</code></td>
+<td>Ver y configurar las reglas de aprobación</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Para aprobar no hace falta un permiso:</strong> aprueba quien la regla designa. Cualquier usuario ve en <em>Por aprobar</em> lo que espera su firma.</p>
+<p>Roles estándar: <code>ERP_SOL_ADMINISTRADOR</code>, <code>ERP_SOL_CONFIGURADOR</code> (reglas), <code>ERP_SOL_SOLICITANTE</code> y <code>ERP_SOL_CONSULTA</code>.</p>
+<p>El módulo se activa en <em>Configuración → Módulos</em>. El usuario solo ve y registra solicitudes en las empresas y unidades de negocio que tiene asignadas.</p>
+<h2 id="3-flujo-del-proceso">3. Flujo del proceso<a class="headerlink" href="#3-flujo-del-proceso" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; Borrador
+    Borrador --&gt; EnAprobacion: Enviar
+    EnAprobacion --&gt; Aprobada: aprueba el último nivel
+    EnAprobacion --&gt; Rechazada: Rechazar
+    EnAprobacion --&gt; Devuelta: Devolver
+    Devuelta --&gt; EnAprobacion: Reenviar (desde el nivel 1)
+    Borrador --&gt; Anulada
+    Devuelta --&gt; Anulada
+    Aprobada --&gt; Anulada: sin orden de compra
+    Aprobada --&gt; Atendida: Compras la incluye en una orden
+    Atendida --&gt; Aprobada: la orden se rechaza, se anula o se quita
+    Rechazada --&gt; [*]</code></pre>
+<table>
+<thead>
+<tr>
+<th>Estado</th>
+<th>Qué significa</th>
+<th>Quién actúa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Borrador</td>
+<td>Se está preparando; se puede editar</td>
+<td>Solicitante</td>
+</tr>
+<tr>
+<td>En aprobación</td>
+<td>Esperando a los aprobadores del nivel actual (se muestra quién)</td>
+<td>Aprobadores</td>
+</tr>
+<tr>
+<td>Devuelta</td>
+<td>Un aprobador pidió corregir algo</td>
+<td>Solicitante</td>
+</tr>
+<tr>
+<td>Rechazada</td>
+<td>No procede; es final</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Aprobada</td>
+<td>Lista para Compras; ya no se edita</td>
+<td>Compras</td>
+</tr>
+<tr>
+<td>Atendida</td>
+<td>Está completa en una orden de compra (se muestra su número); ya no está disponible para otra</td>
+<td>Compras</td>
+</tr>
+<tr>
+<td>Anulada</td>
+<td>Se dejó sin efecto, con motivo</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-pantallas-y-campos">4. Pantallas y campos<a class="headerlink" href="#4-pantallas-y-campos" title="Permanent link">&para;</a></h2>
+<h3 id="solicitudes-de-compra_1">Solicitudes de compra<a class="headerlink" href="#solicitudes-de-compra_1" title="Permanent link">&para;</a></h3>
+<p>Pestañas: <strong>Por aprobar</strong> (con contador; muestra las de todas tus empresas), <strong>Mis solicitudes</strong> y <strong>Todas</strong> (con el permiso de ver). Filtro por estado.</p>
+<p><strong>Cabecera:</strong> título, unidad de negocio, fecha requerida, moneda (la de la empresa o USD), justificación y los atributos adicionales activos (<a href="../../adr/0005-atributos-adicionales/">ADR-005</a>). El número se asigna solo: <code>SC-2026-000001</code>, correlativo por empresa y año.</p>
+<p><strong>Línea:</strong> artículo (búsqueda por código, descripción, marca o modelo), descripción (editable), cantidad, unidad (la del artículo o sus alternativas), precio estimado sin impuesto y atributos de línea. Si el artículo tiene precio referencial en la misma moneda, se propone.</p>
+<p><strong>Distribución:</strong> uno o varios centros de costo con su porcentaje; deben sumar 100. El último centro recibe el redondeo para que los montos cuadren al céntimo. Cada reparto tiene sus atributos de distribución.</p>
+<p><strong>Detalle:</strong> líneas con su cuenta contable (se fija al enviar), <strong>Quién aprobará</strong> (vista previa antes de enviar) y el <strong>historial de aprobación</strong> por nivel, con quién actuó, cuándo y su comentario. Los envíos anteriores quedan plegados.</p>
+<p><strong>Botones según el estado:</strong> Editar, Enviar / Reenviar, Anular (pide motivo); para el aprobador de turno: <strong>Aprobar</strong>, <strong>Devolver para corregir</strong> y <strong>Rechazar</strong> (estos dos piden comentario).</p>
+<h3 id="reglas-de-aprobacion">Reglas de aprobación<a class="headerlink" href="#reglas-de-aprobacion" title="Permanent link">&para;</a></h3>
+<p>Por empresa, con una pestaña para solicitudes y otra para órdenes de compra. Lista con prioridad, condiciones y un resumen de cada nivel. Al editar:</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Regla</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nombre</td>
+<td>Obligatorio</td>
+</tr>
+<tr>
+<td>Prioridad</td>
+<td>Desde 1; única en la empresa. Se evalúa primero la de menor número</td>
+</tr>
+<tr>
+<td>Se aplica a</td>
+<td>Unidad de negocio, categoría (incluye subcategorías), tipo de artículo y centro de costo; vacío = cualquiera</td>
+</tr>
+<tr>
+<td>Nivel 1 a 3</td>
+<td><strong>Se activa desde</strong> (monto en la moneda de la empresa; no puede ser menor que el del nivel anterior) y <strong>Modo</strong></td>
+</tr>
+<tr>
+<td>Aprobadores</td>
+<td>Usuario específico, rol, responsable del centro de costo o jefe del solicitante; cada uno con condiciones opcionales <em>Solo si…</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ejemplo:</strong> Nivel 1 desde S/ 0, en serie: jefe del solicitante. Nivel 2 desde S/ 5,000, paralelo · basta uno: Gerente de Administración o rol <em>Aprobador de gerencia</em>. Una solicitud de S/ 3,000 la aprueba solo el jefe; una de S/ 8,000, el jefe y luego uno de los dos del nivel 2.</p>
+<h3 id="datos-que-usan-las-reglas">Datos que usan las reglas<a class="headerlink" href="#datos-que-usan-las-reglas" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Jefe inmediato:</strong> en <em>Configuración → Usuarios</em>.</li>
+<li><strong>Responsable del centro de costo:</strong> en <em>Contabilidad → Centros de costo</em>, ahora es un usuario del ERP.</li>
+</ul>
+<h2 id="5-reglas-de-negocio-y-validaciones">5. Reglas de negocio y validaciones<a class="headerlink" href="#5-reglas-de-negocio-y-validaciones" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Solo se edita en <em>Borrador</em> o <em>Devuelta</em>, y solo quien la registró.</li>
+<li>Al enviar:<ul>
+<li>cada artículo debe tener perfil contable en la empresa; su cuenta de cargo queda guardada en la línea;</li>
+<li>el total se convierte a la moneda de la empresa con el tipo de cambio venta vigente; ese monto decide los niveles;</li>
+<li>si no hay regla aplicable, falta el jefe, un centro no tiene responsable o un rol no tiene usuarios, el envío se bloquea con el motivo.</li>
+</ul>
+</li>
+<li>El solicitante nunca aprueba su propia solicitud: su paso aparece <em>omitido</em>.</li>
+<li>En <em>paralelo · basta uno</em>, al aprobar uno los demás quedan <em>omitidos</em>.</li>
+<li>Un aprobador por rol debe tener acceso a la unidad de negocio de la solicitud.</li>
+<li>Una solicitud en aprobación no se anula: se pide que la devuelvan.</li>
+<li>Cambiar una regla no afecta las solicitudes ya enviadas: sus aprobadores se fijan al enviar.</li>
+<li>Todo (crear, editar, enviar, aprobar, devolver, rechazar, anular, cambiar reglas) queda en la auditoría.</li>
+</ul>
+<h2 id="6-reportes-disponibles">6. Reportes disponibles<a class="headerlink" href="#6-reportes-disponibles" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Lista de solicitudes por estado, con quién la tiene pendiente.</li>
+<li>Reporte de solicitudes y órdenes en Excel: siguiente entrega.</li>
+</ul>
+<h2 id="7-configuracion-por-pais">7. Configuración por país<a class="headerlink" href="#7-configuracion-por-pais" title="Permanent link">&para;</a></h2>
+<p>La moneda de comparación de montos es la moneda funcional de la empresa (PEN en Perú). Las reglas no dependen del país.</p>
+<h2 id="8-preguntas-frecuentes">8. Preguntas frecuentes<a class="headerlink" href="#8-preguntas-frecuentes" title="Permanent link">&para;</a></h2>
+<p><strong>No puedo enviar: "No hay una regla de aprobación".</strong> El administrador de solicitudes debe crear al menos una regla general (sin condiciones) en la empresa.</p>
+<p><strong>¿Qué pasa si el jefe se va de la empresa?</strong> Al desactivar su usuario, las solicitudes nuevas de su equipo no se envían hasta registrar otro jefe. Las que ya esperaban su firma quedan detenidas: la reasignación llegará con los <em>aprobadores suplentes</em> (ver <a href="../../adr/0006-motor-de-aprobacion/">ADR-006</a>). Antes de desactivarlo, pide que las apruebe o devuelva.</p>
+<p><strong>¿Puedo aprobar mi propia solicitud si soy gerente?</strong> No. Tu paso se omite y sigue el siguiente aprobador.</p>
+<p><strong>Devolví una solicitud, ¿la vuelvo a aprobar?</strong> Sí: el reenvío empieza de nuevo en el nivel 1.</p>
+<h2 id="referencia-tecnica">Referencia técnica<a class="headerlink" href="#referencia-tecnica" title="Permanent link">&para;</a></h2>
+<p>Motor de aprobación: <a href="../../adr/0006-motor-de-aprobacion/">ADR-006</a>. API: <code>/api/v1/solicitudes</code>; reglas en <code>/api/v1/aprobaciones?documento=solicitud</code> (ver <code>/docs</code> de la API). Órdenes de compra: <a href="../compras/">Compras</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Volver al principio
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "search.suggest"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado al portapapeles", "clipboard.copy": "Copiar al portapapeles", "search.result.more.one": "1 m\u00e1s en esta p\u00e1gina", "search.result.more.other": "# m\u00e1s en esta p\u00e1gina", "search.result.none": "No se encontraron documentos", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Teclee para comenzar b\u00fasqueda", "search.result.term.missing": "Falta", "select.version": "Seleccionar versi\u00f3n"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
